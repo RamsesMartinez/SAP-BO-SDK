@@ -1,5 +1,4 @@
-﻿
-Module SubMain
+﻿Module SubMain
 
     Public Sub Main()
 

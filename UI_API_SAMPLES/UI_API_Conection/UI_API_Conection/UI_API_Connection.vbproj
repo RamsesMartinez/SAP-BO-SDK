@@ -9,8 +9,8 @@
     </SchemaVersion>
     <ProjectGuid>{E135FEBA-BD78-4C7A-BA1E-79D5B1C4F77A}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>UI_API_Conection</RootNamespace>
-    <AssemblyName>UI_API_Conection</AssemblyName>
+    <RootNamespace>UI_API_Connection</RootNamespace>
+    <AssemblyName>UI_API_Connection</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Empty</MyType>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
@@ -52,7 +52,7 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>UI_API_Conection.SubMain</StartupObject>
+    <StartupObject>UI_API_Connection.SubMain</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Import Include="Microsoft.VisualBasic" />

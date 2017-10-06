@@ -1,6 +1,0 @@
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\obj\x86\Debug\Interop.SAPbouiCOM.dll
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\obj\x86\Debug\UI_API_Connection.vbproj.ResolveComReference.cache
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\bin\Debug\UI_API_Connection.exe
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\bin\Debug\UI_API_Connection.pdb
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\obj\x86\Debug\UI_API_Connection.exe
-C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Conection\UI_API_Conection\obj\x86\Debug\UI_API_Connection.pdb

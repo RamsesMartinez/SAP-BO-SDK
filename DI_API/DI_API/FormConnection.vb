@@ -178,13 +178,16 @@
                     comboCompanys.SelectedIndex = 32
                 End If ' ComboCompanys.SelectedItem
             End If 'lErrcode
+
+
+            GC.Collect()
+            System.Runtime.InteropServices.Marshal.ReleaseComObject(oRecordSet)
+            oRecordSet = Nothing
+
         Catch ex As Exception
             MsgBox(ex.Message)
         End Try
 
-        GC.Collect()
-        System.Runtime.InteropServices.Marshal.ReleaseComObject(oRecordSet)
-        oRecordSet = Nothing
 
     End Sub
 

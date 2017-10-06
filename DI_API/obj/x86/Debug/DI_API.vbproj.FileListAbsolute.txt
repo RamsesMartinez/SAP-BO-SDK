@@ -1,0 +1,15 @@
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\bin\Debug\DI_API.exe
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\bin\Debug\DI_API.pdb
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\bin\Debug\DI_API.xml
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.Resources.resources
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.vbproj.GenerateResource.Cache
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.exe
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.xml
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.pdb
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.FormConnection.resources
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.vbproj.ResolveComReference.cache
+C:\Users\rmartinez\documents\visual studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\Interop.SAPbobsCOM.dll
+C:\Users\rmartinez\Documents\Visual Studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.FormOrders.resources
+C:\Users\rmartinez\Documents\Visual Studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.FormClientsTable.resources
+C:\Users\rmartinez\Documents\Visual Studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.FormViewClients.resources
+C:\Users\rmartinez\Documents\Visual Studio 2010\Projects\DI_API\DI_API\obj\x86\Debug\DI_API.FormAddData.resources

@@ -50,11 +50,6 @@ Public Class Events
         Dim oFilters As SAPbouiCOM.EventFilters = New SAPbouiCOM.EventFilters
 
         Try
-            ' // Add the First Event Type to the Container
-            'oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CLICK)
-
-            ' // Assign the  form Type for which the event should be processed
-            'oFilter.AddEx("139")  ' Sales Order Form
 
             ' // Add the Others Event Types to the Container
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_LOAD)
@@ -83,7 +78,8 @@ Public Class Events
 
                 End If
 
-            ElseIf Not pVal.BeforeAction Then
+            Else
+                'pVal.BeforeAction = False
                 If pVal.FormType = "139" Then
                     If pVal.EventType = SAPbouiCOM.BoEventTypes.et_FORM_LOAD Then
                         oSBOApp.MessageBox("Formulario de Orden de Venta Creado")
@@ -105,6 +101,7 @@ Public Class Events
 
         Catch ex As Exception
             MsgBox(ex.Message)
+
         End Try
     End Sub
 
@@ -112,5 +109,6 @@ Public Class Events
     Public Sub New()
         StartApp()
         Setfilters()
+
     End Sub
 End Class

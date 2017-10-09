@@ -1,0 +1,6 @@
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\bin\Debug\UI_API_Events.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\bin\Debug\UI_API_Events.pdb
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\obj\x86\Debug\Interop.SAPbouiCOM.dll
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\obj\x86\Debug\UI_API_Events.vbproj.ResolveComReference.cache
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\obj\x86\Debug\UI_API_Events.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_Events\UI_API_Events\obj\x86\Debug\UI_API_Events.pdb

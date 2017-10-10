@@ -62,48 +62,6 @@
     End Sub
 
 
-    Private Sub SetMenuItems()
-        Dim oMenus As SAPbouiCOM.Menus
-        Dim oMenuItem As SAPbouiCOM.MenuItem
-        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
-
-        Try
-            oMenuItem = oApplication.Menus.Item("43520")
-            oMenus = oMenuItem.SubMenus
-
-            oCreationPackage = oApplication.CreateObject(
-                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
-
-            ' // Set New Menu Item values into the MenuCreationPackage Object
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
-            oCreationPackage.UniqueID = "SampleMenu"
-            oCreationPackage.String = "Ejercicio"
-            oCreationPackage.Enabled = True
-            oCreationPackage.Position = 10
-
-            ' // Add the new Menu
-            If oApplication.Menus.Exists("SampleMenu") Then
-                oApplication.Menus.RemoveEx("SampleMenu")
-            End If
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Sets config to New SubMenu Item
-            oMenuItem = oApplication.Menus.Item("SampleMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "SubMenu001"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Ventana ejercicio"
-            oCreationPackage.Enabled = True
-
-            ' // Add the New Sum Menu Item
-            oMenus.AddEx(oCreationPackage)
-
-        Catch ex As Exception
-            oApplication.MessageBox(ex.Message)
-        End Try
-    End Sub
-
-
     Private Sub SetDataSourceToForm()
         oForm.DataSources.UserDataSources.Add("DSCardCode", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
         oForm.DataSources.UserDataSources.Add("DSCardName", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
@@ -155,8 +113,8 @@
             End If
 
             oForm = oApplication.Forms.AddEx(oCreationParams)
-            oForm.Width = 380
-            oForm.Height = 420
+            oForm.Width = 390
+            oForm.Height = 400
             oForm.Title = "Ejercicio"
 
 
@@ -169,9 +127,6 @@
             ' *****************************
             AddChooseFromList()
 
-
-            ' // Set Form Items
-            ' ***********************
 
             ' // Set Card Code items
             ' ************************
@@ -193,7 +148,7 @@
             oItem = oForm.Items.Add("TxtCCode", SAPbouiCOM.BoFormItemTypes.it_EDIT)
             With oItem
                 .Left = 160
-                .Width = 150
+                .Width = 160
                 .Top = 50
                 .Height = 16
                 oEditText = oItem.Specific
@@ -236,7 +191,7 @@
             oItem = oForm.Items.Add("TxtCName", SAPbouiCOM.BoFormItemTypes.it_EDIT)
             With oItem
                 .Left = 160
-                .Width = 150
+                .Width = 160
                 .Height = 16
                 .Top = 70
                 .LinkTo = "TxtCCode"
@@ -411,19 +366,78 @@
 
 
     ' *****************************
+    ' ********* MENU ITEMS  **********
+    ' *****************************
+    Private Sub SetMenuItems()
+        Dim oMenus As SAPbouiCOM.Menus
+        Dim oMenuItem As SAPbouiCOM.MenuItem
+        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
+
+        Try
+            oMenuItem = oApplication.Menus.Item("43520")
+            oMenus = oMenuItem.SubMenus
+
+            oCreationPackage = oApplication.CreateObject(
+                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
+
+            ' // Set New Menu Item values into the MenuCreationPackage Object
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
+            oCreationPackage.UniqueID = "SampleMenu"
+            oCreationPackage.String = "Ejercicio"
+            oCreationPackage.Enabled = True
+            oCreationPackage.Position = 10
+
+            ' // Add the new Menu
+            If oApplication.Menus.Exists("SampleMenu") Then
+                oApplication.Menus.RemoveEx("SampleMenu")
+            End If
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Sets config to New SubMenu Item
+            oMenuItem = oApplication.Menus.Item("SampleMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "SubMenu001"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Ventana ejercicio"
+            oCreationPackage.Enabled = True
+
+            ' // Add the New Sum Menu Item
+            oMenus.AddEx(oCreationPackage)
+
+        Catch ex As Exception
+            oApplication.MessageBox(ex.Message)
+        End Try
+    End Sub
+
+
+    Private Sub SetFormMenuItems()
+        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
+
+        Try
+            oCreationPackage = oApplication.CreateObject(SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.UniqueID = "MyMenu001"
+            oCreationPackage.String = "Mi menú Ir A"
+
+
+            oForm.Menu.AddEx(oCreationPackage)
+        Catch ex As Exception
+            oApplication.MessageBox(ex.Message)
+        End Try
+
+    End Sub
+
+
+    ' *****************************
     ' ********* FILTERS  **********
     ' *****************************
 
     Private Sub oApplication_MenuEvent(ByRef pVal As SAPbouiCOM.MenuEvent, ByRef BubbleEvent As Boolean) Handles oApplication.MenuEvent
 
-        If pVal.BeforeAction = True Then
-            If pVal.MenuUID = "SubMenu001" Then
-                CreateForm()
-
-            End If
-        Else
+        If pVal.BeforeAction Then
             If pVal.MenuUID = "SubMenu001" Then
                 Try
+                    CreateForm()
                     '// Bind the Form's items with the desired data source
                     BindDataToMatrix()
                     GetDataFromDataSource()
@@ -433,7 +447,16 @@
                 Catch ex As Exception
                     oApplication.SetStatusBarMessage("Error: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Medium, True)
                 End Try
-                
+
+            ElseIf pVal.MenuUID = "MyMenu001" Then
+                oApplication.SetStatusBarMessage("Menu del formulario presionado".ToString, SAPbouiCOM.BoMessageTime.bmt_Short, False)
+            End If
+
+        Else
+            If pVal.MenuUID = "SubMenu001" Then
+
+                SetFormMenuItems()
+
             End If
         End If
 
@@ -461,7 +484,7 @@
                             oCFL = oForm.ChooseFromLists.Item(sCFL_ID)
                             oDataTable = oCFLEvento.SelectedObjects
 
-                            ' // Get Card Values from table result
+                            ' // Get Cardr Values from table result
                             sCardCode = oDataTable.GetValue(0, 0)
                             sCardName = oDataTable.GetValue(1, 0)
                             ' // Set new values to Edit Texts

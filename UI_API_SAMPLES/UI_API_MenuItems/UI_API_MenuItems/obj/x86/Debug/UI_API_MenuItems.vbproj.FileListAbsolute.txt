@@ -1,0 +1,6 @@
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\obj\x86\Debug\Interop.SAPbouiCOM.dll
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\obj\x86\Debug\UI_API_MenuItems.vbproj.ResolveComReference.cache
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\bin\Debug\UI_API_MenuItems.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\bin\Debug\UI_API_MenuItems.pdb
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\obj\x86\Debug\UI_API_MenuItems.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_MenuItems\UI_API_MenuItems\obj\x86\Debug\UI_API_MenuItems.pdb

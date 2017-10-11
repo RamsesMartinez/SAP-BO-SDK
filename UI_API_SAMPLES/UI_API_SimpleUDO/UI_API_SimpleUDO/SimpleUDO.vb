@@ -10,7 +10,6 @@ Public Class SimpleUDO
     Private oColumns As SAPbouiCOM.Columns
     Private oColumn As SAPbouiCOM.Column
 
-    Private oForm As SAPbouiCOM.Form
     Private oDBDataSource As SAPbouiCOM.DBDataSource
     Private oUserDataSource As SAPbouiCOM.UserDataSource
     Private countIDForm As Integer = 0
@@ -52,13 +51,13 @@ Public Class SimpleUDO
 
             ' // Add the Others Event Types to the Container
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_MENU_CLICK)
-            oFilter.AddEx("SampleFormType")  ' Sales Order Form
+            oFilter.AddEx("SampleFormType")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST)
-            oFilter.AddEx("SampleFormType")  ' Sales Order Form
+            oFilter.AddEx("SampleFormType")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_LOST_FOCUS)
-            oFilter.AddEx("SampleFormType")  ' Sales Order Form
+            oFilter.AddEx("SampleFormType")
 
             oApplication.SetFilter(oFilters)
 
@@ -69,7 +68,7 @@ Public Class SimpleUDO
     End Sub
 
 
-    Private Sub SetDataSourceToForm()
+    Private Sub SetDataSourceToForm(ByRef oForm As SAPbouiCOM.Form)
         oForm.DataSources.UserDataSources.Add("DSCardCode", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
         oForm.DataSources.UserDataSources.Add("DSCardName", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
 
@@ -107,7 +106,7 @@ Public Class SimpleUDO
         Dim oEditText As SAPbouiCOM.EditText
         Dim oButton As SAPbouiCOM.Button
         Dim oLink As SAPbouiCOM.LinkedButton
-
+        Dim oForm As SAPbouiCOM.Form
 
         Try
             ' // Creating the New form
@@ -137,12 +136,12 @@ Public Class SimpleUDO
 
             '' // Set data Source to form
             '' **********************************
-            SetDataSourceToForm()
+            SetDataSourceToForm(oForm)
 
 
             ' // Add Choose From List
             ' *****************************
-            AddChooseFromList()
+            AddChooseFromList(oForm)
 
 
             ' // Set Card Code items
@@ -249,7 +248,7 @@ Public Class SimpleUDO
 
 
             ' // Add the matrix and Set form visible
-            AddMatrixToForm()
+            AddMatrixToForm(oForm)
 
             '// Bind the Form's items with the desired data source
             BindDataToMatrix()
@@ -273,6 +272,7 @@ Public Class SimpleUDO
         Dim oCreationParams As SAPbouiCOM.FormCreationParams
         Dim oXmlDoc As Xml.XmlDocument
         Dim sPath As String
+        Dim oForm As SAPbouiCOM.Form
 
         Try
 
@@ -314,7 +314,7 @@ Public Class SimpleUDO
     End Function
 
 
-    Private Sub AddMatrixToForm()
+    Private Sub AddMatrixToForm(ByRef oForm As SAPbouiCOM.Form)
 
         '// we will use the following object to add items to our form
         Dim oItem As SAPbouiCOM.Item
@@ -384,7 +384,7 @@ Public Class SimpleUDO
     End Function
 
 
-    Private Sub AddChooseFromList()
+    Private Sub AddChooseFromList(ByRef oForm As SAPbouiCOM.Form)
         Dim oCFLs As SAPbouiCOM.ChooseFromListCollection
         Dim oCons As SAPbouiCOM.Conditions
         Dim oCon As SAPbouiCOM.Condition
@@ -513,7 +513,7 @@ Public Class SimpleUDO
     End Sub
 
 
-    Private Sub SetFormMenuItems()
+    Private Sub SetFormMenuItems(ByRef oForm As SAPbouiCOM.Form)
         Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
 
         Try
@@ -557,7 +557,10 @@ Public Class SimpleUDO
 
         Else
             If pVal.MenuUID = "SubMenu001" Then
-                SetFormMenuItems()
+                Dim oForm As SAPbouiCOM.Form
+
+                oForm = oApplication.Forms.Item("SampleFormID")
+                SetFormMenuItems(oForm)
 
             End If
         End If
@@ -570,9 +573,11 @@ Public Class SimpleUDO
             If Not pVal.BeforeAction Then
 
                 ' // Cath Actions from Message box
-                If pVal.FormTypeEx = "0" Then
+
+                If pVal.FormTypeEx = "SampleFormType" Then
                     Select Case pVal.EventType
                         Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
+
                             If pVal.ItemUID = "TxtCCode" Or pVal.ItemUID = "TxtCName" Then
                                 Dim oCFLEvento As SAPbouiCOM.IChooseFromListEvent
                                 Dim oCFL As SAPbouiCOM.ChooseFromList
@@ -580,7 +585,7 @@ Public Class SimpleUDO
                                 Dim sCFL_ID, sCardCode, sCardName As String
                                 Dim oForm As SAPbouiCOM.Form
 
-                                oForm = oApplication.Forms.Item(FormUID)
+                                oForm = oApplication.Forms.Item("SampleFormID")
 
                                 oCFLEvento = pVal
                                 sCFL_ID = oCFLEvento.ChooseFromListUID
@@ -602,6 +607,9 @@ Public Class SimpleUDO
 
                         Case SAPbouiCOM.BoEventTypes.et_LOST_FOCUS
                             Dim oEditText As SAPbouiCOM.EditText
+                            Dim oForm As SAPbouiCOM.Form
+
+                            oForm = oApplication.Forms.Item(FormUID)
 
                             ' // Clean the text of both if less one has nothing
                             If pVal.ItemUID = "TxtCCode" Then
@@ -634,8 +642,6 @@ Public Class SimpleUDO
 
                     End Select
 
-                ElseIf pVal.FormTypeEx = "SampleFormType" Then
-                    oApplication.SetStatusBarMessage(FormUID, SAPbouiCOM.BoMessageTime.bmt_Medium, False)
                 End If  ' pVal.FormType
 
             End If  ' pVal.Before Action

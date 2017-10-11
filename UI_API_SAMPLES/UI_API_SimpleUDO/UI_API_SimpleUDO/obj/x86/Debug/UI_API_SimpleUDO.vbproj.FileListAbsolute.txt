@@ -1,0 +1,7 @@
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\obj\x86\Debug\Interop.SAPbouiCOM.dll
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\obj\x86\Debug\Interop.SBODI_Server.dll
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\obj\x86\Debug\UI_API_SimpleUDO.vbproj.ResolveComReference.cache
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\bin\Debug\UI_API_SimpleUDO.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\bin\Debug\UI_API_SimpleUDO.pdb
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\obj\x86\Debug\UI_API_SimpleUDO.exe
+C:\Users\rmartinez\Documents\Git\SAP-BO-SDK\UI_API_SAMPLES\UI_API_SimpleUDO\UI_API_SimpleUDO\obj\x86\Debug\UI_API_SimpleUDO.pdb

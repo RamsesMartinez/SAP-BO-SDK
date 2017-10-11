@@ -7,10 +7,10 @@
     </ProductVersion>
     <SchemaVersion>
     </SchemaVersion>
-    <ProjectGuid>{67F94FD3-364A-49A2-A896-97450BA05AC2}</ProjectGuid>
+    <ProjectGuid>{AB5884DE-65C3-438D-B61C-69F14EEE3651}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>UI_API_Events</RootNamespace>
-    <AssemblyName>UI_API_MenuItems</AssemblyName>
+    <RootNamespace>UI_API_SimpleUDO</RootNamespace>
+    <AssemblyName>UI_API_SimpleUDO</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Empty</MyType>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
@@ -56,6 +56,11 @@
     <Import Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.XML" />
+  </ItemGroup>
+  <ItemGroup>
     <COMReference Include="SAPbouiCOM">
       <Guid>{6048236A-956D-498D-A6F1-9C81C13AB6E8}</Guid>
       <VersionMajor>9</VersionMajor>
@@ -65,18 +70,22 @@
       <Isolated>False</Isolated>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
+    <COMReference Include="SBODI_Server">
+      <Guid>{D68328C8-4EDA-4427-8E76-5CE3ED1063C0}</Guid>
+      <VersionMajor>9</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MenuItems.vb" />
     <Compile Include="SubMain.vb" />
+    <Compile Include="SimpleUDO.vb" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="My Project\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.XML" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

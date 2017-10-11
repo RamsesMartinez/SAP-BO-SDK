@@ -1,6 +1,6 @@
 ﻿Imports System.Windows.Forms
 
-Public Class MenuItems
+Public Class SimpleUDO
     Private WithEvents oApplication As SAPbouiCOM.Application
     Private oSboGuiApi As SAPbouiCOM.SboGuiApi
     Private oFilters As SAPbouiCOM.EventFilters
@@ -13,6 +13,8 @@ Public Class MenuItems
     Private oForm As SAPbouiCOM.Form
     Private oDBDataSource As SAPbouiCOM.DBDataSource
     Private oUserDataSource As SAPbouiCOM.UserDataSource
+    Private countIDForm As Integer = 0
+
 
     ' *****************************
     ' ******** FUNCTIONS **********
@@ -61,7 +63,7 @@ Public Class MenuItems
             oApplication.SetFilter(oFilters)
 
         Catch ex As Exception
-            MsgBox(ex.Message)
+            oApplication.SetStatusBarMessage("Error SetFilter: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
         End Try
 
     End Sub
@@ -79,26 +81,22 @@ Public Class MenuItems
 
     Private Sub GetMatrixDataFromDataSource()
         '// Ready Matrix to populate data
-        oMatrix.Clear()
-        oMatrix.AutoResizeColumns()
+        Try
+            oMatrix.Clear()
+            oMatrix.AutoResizeColumns()
 
-        '// Execute the query with the conditions collection
-        oDBDataSource.Query()
+            '// Execute the query with the conditions collection
+            oDBDataSource.Query()
 
-        'oMatrix.LoadFromDataSource()
-
-        ' // Previous Method
-        'For i As Integer = 1 To oMatrix.RowCount
-        '    oMatrix.Columns.Item("DSUserID").Cells.Item(i).Specific.Value = i.ToString
-        'Next
-
-        ' // Add the values for first column (1..2..3... n)
-        For i As Integer = 0 To oDBDataSource.Size - 1
-            oDBDataSource.Offset = i
-            oUserDataSource.Value = i + 1
-            oMatrix.AddRow()
-        Next
-
+            ' // Add the values for first column (1..2..3... n)
+            For i As Integer = 0 To oDBDataSource.Size - 1
+                oDBDataSource.Offset = i
+                oUserDataSource.Value = i + 1
+                oMatrix.AddRow()
+            Next
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error GetMatrixDataDS: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+        End Try
     End Sub
 
 
@@ -109,6 +107,7 @@ Public Class MenuItems
         Dim oEditText As SAPbouiCOM.EditText
         Dim oButton As SAPbouiCOM.Button
         Dim oLink As SAPbouiCOM.LinkedButton
+
 
         Try
             ' // Creating the New form
@@ -263,17 +262,33 @@ Public Class MenuItems
 
             Return True
         Catch ex As Exception
-            oApplication.MessageBox(ex.Message)
+            oApplication.SetStatusBarMessage("Error CreateSampleForm: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
             Return False
         End Try
 
     End Function
 
+
     Private Function CreateSampleForm(ByVal FileName As String) As Boolean
+        Dim oCreationParams As SAPbouiCOM.FormCreationParams
         Dim oXmlDoc As Xml.XmlDocument
         Dim sPath As String
 
         Try
+
+            ' // Creating the New form
+            ' *************************
+
+            ' // Create the FormCreationParams Object
+            oCreationParams = oApplication.CreateObject(
+                SAPbouiCOM.BoCreatableObjectType.cot_FormCreationParams)
+
+            ' // Specify the parameters in the object
+            countIDForm += 1
+            oCreationParams.UniqueID = countIDForm.ToString
+            oCreationParams.FormType = "SampleFormType"
+            oCreationParams.BorderStyle = SAPbouiCOM.BoFormBorderStyle.fbs_Fixed
+
 
             oXmlDoc = New Xml.XmlDocument
 
@@ -283,11 +298,18 @@ Public Class MenuItems
             oXmlDoc.Load(sPath & "\XMLForms\" & FileName)
 
             '// load the form to the SBO application in one batch
-            oApplication.LoadBatchActions(oXmlDoc.InnerXml)
+            'oApplication.LoadBatchActions(oXmlDoc.InnerXml)
+
+            oCreationParams.XmlData = oXmlDoc.InnerXml
+
+
+            oForm = oApplication.Forms.AddEx(oCreationParams)
+
         Catch ex As Exception
-            oApplication.SetStatusBarMessage(ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+            oApplication.SetStatusBarMessage("Error CreateSampleFormSRF" & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
             Return False
         End Try
+
         Return True
     End Function
 
@@ -402,8 +424,8 @@ Public Class MenuItems
             oCFL.SetConditions(oCons)
 
 
-        Catch
-            MsgBox(Err.Description)
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error AddChooseFromList: " & ex.Message)
 
         End Try
     End Sub
@@ -485,7 +507,7 @@ Public Class MenuItems
             oMenus.AddEx(oCreationPackage)
 
         Catch ex As Exception
-            oApplication.MessageBox(ex.Message)
+            oApplication.SetStatusBarMessage("Error SetMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
 
         End Try
     End Sub
@@ -502,7 +524,7 @@ Public Class MenuItems
 
             oForm.Menu.AddEx(oCreationPackage)
         Catch ex As Exception
-            oApplication.SetStatusBarMessage(ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, False)
+            oApplication.SetStatusBarMessage("Error SetFormMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, False)
         End Try
 
     End Sub
@@ -535,7 +557,6 @@ Public Class MenuItems
 
         Else
             If pVal.MenuUID = "SubMenu001" Then
-
                 SetFormMenuItems()
 
             End If
@@ -547,8 +568,9 @@ Public Class MenuItems
     Private Sub oApplication_ItemEvent(ByVal FormUID As String, ByRef pVal As SAPbouiCOM.ItemEvent, ByRef BubbleEvent As Boolean) Handles oApplication.ItemEvent
         Try
             If Not pVal.BeforeAction Then
+
                 ' // Cath Actions from Message box
-                If pVal.FormType = "0" Then
+                If pVal.FormTypeEx = "0" Then
                     Select Case pVal.EventType
                         Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
                             If pVal.ItemUID = "TxtCCode" Or pVal.ItemUID = "TxtCName" Then
@@ -556,6 +578,9 @@ Public Class MenuItems
                                 Dim oCFL As SAPbouiCOM.ChooseFromList
                                 Dim oDataTable As SAPbouiCOM.DataTable
                                 Dim sCFL_ID, sCardCode, sCardName As String
+                                Dim oForm As SAPbouiCOM.Form
+
+                                oForm = oApplication.Forms.Item(FormUID)
 
                                 oCFLEvento = pVal
                                 sCFL_ID = oCFLEvento.ChooseFromListUID
@@ -609,12 +634,14 @@ Public Class MenuItems
 
                     End Select
 
+                ElseIf pVal.FormTypeEx = "SampleFormType" Then
+                    oApplication.SetStatusBarMessage(FormUID, SAPbouiCOM.BoMessageTime.bmt_Medium, False)
                 End If  ' pVal.FormType
 
             End If  ' pVal.Before Action
 
         Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error" & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+            oApplication.SetStatusBarMessage("Error Item Event: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
         End Try
 
     End Sub

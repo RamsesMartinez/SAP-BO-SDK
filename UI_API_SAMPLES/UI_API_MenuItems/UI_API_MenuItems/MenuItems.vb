@@ -10,7 +10,7 @@
 
     Private oForm As SAPbouiCOM.Form
     Private oDBDataSource As SAPbouiCOM.DBDataSource
-
+    Private oUserDataSource As SAPbouiCOM.UserDataSource
 
     ' *****************************
     ' ******** FUNCTIONS **********
@@ -53,6 +53,9 @@
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST)
             oFilter.AddEx("SampleFormType")  ' Sales Order Form
 
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_LOST_FOCUS)
+            oFilter.AddEx("SampleFormType")  ' Sales Order Form
+
             oApplication.SetFilter(oFilters)
 
         Catch ex As Exception
@@ -65,13 +68,14 @@
     Private Sub SetDataSourceToForm()
         oForm.DataSources.UserDataSources.Add("DSCardCode", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
         oForm.DataSources.UserDataSources.Add("DSCardName", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-        oForm.DataSources.UserDataSources.Add("DSIDUser", SAPbouiCOM.BoDataType.dt_SHORT_NUMBER)
+
         oDBDataSource = oForm.DataSources.DBDataSources.Add("OUSR")
+        oUserDataSource = oForm.DataSources.UserDataSources.Add("DSIDUser", SAPbouiCOM.BoDataType.dt_SHORT_TEXT, 20)
 
     End Sub
 
 
-    Private Sub GetDataFromDataSource()
+    Private Sub GetMatrixDataFromDataSource()
         '// Ready Matrix to populate data
         oMatrix.Clear()
         oMatrix.AutoResizeColumns()
@@ -79,11 +83,24 @@
         '// Execute the query with the conditions collection
         oDBDataSource.Query()
 
-        oMatrix.LoadFromDataSource()
+        'oMatrix.LoadFromDataSource()
+
+        ' // Previous Method
+        'For i As Integer = 1 To oMatrix.RowCount
+        '    oMatrix.Columns.Item("DSUserID").Cells.Item(i).Specific.Value = i.ToString
+        'Next
+
+        ' // Add the values for first column (1..2..3... n)
+        For i As Integer = 0 To oDBDataSource.Size - 1
+            oDBDataSource.Offset = i
+            oUserDataSource.Value = i + 1
+            oMatrix.AddRow()
+        Next
+
     End Sub
 
 
-    Private Sub CreateForm()
+    Private Function CreateForm() As Boolean
         Dim oCreationParams As SAPbouiCOM.FormCreationParams
         Dim oItem As SAPbouiCOM.Item
         Dim oStaticText As SAPbouiCOM.StaticText
@@ -106,10 +123,9 @@
 
 
             ' // Add The New Form to SBO Application
-            If Existform(oCreationParams.UniqueID) Then
-                oApplication.Forms.Item(oCreationParams.UniqueID).Close()
-                oApplication.SetStatusBarMessage("Ya hay un formulario de Ejercicio Abierto. Cerrado Con Éxito.", SAPbouiCOM.BoMessageTime.bmt_Short, True)
-                'Exit Sub
+            If ExistForm(oCreationParams.UniqueID) Then
+                oApplication.SetStatusBarMessage("Ya hay un formulario de Ejercicio Abierto.", SAPbouiCOM.BoMessageTime.bmt_Short, True)
+                Return False
             End If
 
             oForm = oApplication.Forms.AddEx(oCreationParams)
@@ -234,11 +250,22 @@
             ' // Add the matrix and Set form visible
             AddMatrixToForm()
 
+            '// Bind the Form's items with the desired data source
+            BindDataToMatrix()
+
+            ' // Obtains all the form data
+            GetMatrixDataFromDataSource()
+
+            ' // Show the Form
+            oForm.Visible = True
+
+            Return True
         Catch ex As Exception
             oApplication.MessageBox(ex.Message)
-
+            Return False
         End Try
-    End Sub
+
+    End Function
 
 
     Private Sub AddMatrixToForm()
@@ -272,7 +299,7 @@
         With oColumn
             .TitleObject.Caption = "UserName"
             .Width = 150
-            .Editable = True
+            .Editable = False
         End With
 
 
@@ -281,7 +308,7 @@
         With oColumn
             .TitleObject.Caption = "e-mail"
             .Width = 190
-            .Editable = True
+            .Editable = False
         End With
 
     End Sub
@@ -297,18 +324,11 @@
 
         oColumn = oColumns.Item("DSUserID")
         oColumn.DataBind.SetBound(True, "", "DSIDUser")
-    End Sub
-
-
-    Private Sub AddMatrixIDs()
-        For i As Integer = 1 To oMatrix.RowCount
-            oMatrix.Columns.Item("DSUserID").Cells.Item(i).Specific.Value = i.ToString
-        Next
 
     End Sub
 
 
-    Private Function Existform(ByVal sFormID As String) As Boolean
+    Private Function ExistForm(ByVal sFormID As String) As Boolean
         For i As Integer = 0 To oApplication.Forms.Count - 1
             If oApplication.Forms.Item(i).UniqueID = sFormID Then
                 Return True
@@ -419,10 +439,9 @@
             oCreationPackage.UniqueID = "MyMenu001"
             oCreationPackage.String = "Mi menú Ir A"
 
-
             oForm.Menu.AddEx(oCreationPackage)
         Catch ex As Exception
-            oApplication.MessageBox(ex.Message)
+            oApplication.SetStatusBarMessage(ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, False)
         End Try
 
     End Sub
@@ -436,17 +455,10 @@
 
         If pVal.BeforeAction Then
             If pVal.MenuUID = "SubMenu001" Then
-                Try
-                    CreateForm()
-                    '// Bind the Form's items with the desired data source
-                    BindDataToMatrix()
-                    GetDataFromDataSource()
-                    AddMatrixIDs()
-                    ' // Show the Form
-                    oForm.Visible = True
-                Catch ex As Exception
-                    oApplication.SetStatusBarMessage("Error: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Medium, True)
-                End Try
+                If Not CreateForm() Then
+                    BubbleEvent = False
+                End If
+
 
             ElseIf pVal.MenuUID = "MyMenu001" Then
                 oApplication.SetStatusBarMessage("Menu del formulario presionado".ToString, SAPbouiCOM.BoMessageTime.bmt_Short, False)
@@ -466,34 +478,67 @@
     Private Sub oApplication_ItemEvent(ByVal FormUID As String, ByRef pVal As SAPbouiCOM.ItemEvent, ByRef BubbleEvent As Boolean) Handles oApplication.ItemEvent
         Try
             If Not pVal.BeforeAction Then
-
                 ' // Cath Actions from Message box
                 If pVal.FormType = "0" Then
+                    Select Case pVal.EventType
+                        Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
+                            If pVal.ItemUID = "TxtCCode" Or pVal.ItemUID = "TxtCName" Then
+                                Dim oCFLEvento As SAPbouiCOM.IChooseFromListEvent
+                                Dim oCFL As SAPbouiCOM.ChooseFromList
+                                Dim oDataTable As SAPbouiCOM.DataTable
+                                Dim sCFL_ID, sCardCode, sCardName As String
 
-                    If pVal.EventType = SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST Then
+                                oCFLEvento = pVal
+                                sCFL_ID = oCFLEvento.ChooseFromListUID
+                                oCFL = oForm.ChooseFromLists.Item(sCFL_ID)
+                                oDataTable = oCFLEvento.SelectedObjects
 
-                        If pVal.ItemUID = "TxtCCode" Or pVal.ItemUID = "TxtCName" Then
+                                If Not oDataTable Is Nothing Then
+                                    ' // Get Cardr Values from table result
+                                    sCardCode = oDataTable.GetValue(0, 0)
+                                    sCardName = oDataTable.GetValue(1, 0)
 
-                            Dim oCFLEvento As SAPbouiCOM.IChooseFromListEvent
-                            Dim oCFL As SAPbouiCOM.ChooseFromList
-                            Dim oDataTable As SAPbouiCOM.DataTable
-                            Dim sCFL_ID, sCardCode, sCardName As String
+                                    ' // Set new values to Edit Texts
+                                    oForm.DataSources.UserDataSources.Item("DSCardCode").ValueEx = sCardCode
+                                    oForm.DataSources.UserDataSources.Item("DSCardName").ValueEx = sCardName
 
-                            oCFLEvento = pVal
-                            sCFL_ID = oCFLEvento.ChooseFromListUID
-                            oCFL = oForm.ChooseFromLists.Item(sCFL_ID)
-                            oDataTable = oCFLEvento.SelectedObjects
+                                End If
 
-                            ' // Get Cardr Values from table result
-                            sCardCode = oDataTable.GetValue(0, 0)
-                            sCardName = oDataTable.GetValue(1, 0)
-                            ' // Set new values to Edit Texts
-                            oForm.DataSources.UserDataSources.Item("DSCardCode").ValueEx = sCardCode
-                            oForm.DataSources.UserDataSources.Item("DSCardName").ValueEx = sCardName
+                            End If
 
-                        End If
+                        Case SAPbouiCOM.BoEventTypes.et_LOST_FOCUS
+                            Dim oEditText As SAPbouiCOM.EditText
 
-                    End If  ' pVal.EventType
+                            ' // Clean the text of both if less one has nothing
+                            If pVal.ItemUID = "TxtCCode" Then
+                                oEditText = oForm.Items.Item("TxtCCode").Specific
+
+                                If oEditText.String = "" Then
+                                    oEditText = oForm.Items.Item("TxtCName").Specific
+
+                                    If Not oEditText.String = "" Then
+                                        oEditText.String = ""
+
+                                    End If
+
+                                End If
+
+                            ElseIf pVal.ItemUID = "TxtCName" Then
+                                oEditText = oForm.Items.Item("TxtCName").Specific
+
+                                If oEditText.String = "" Then
+                                    oEditText = oForm.Items.Item("TxtCCode").Specific
+
+                                    If Not oEditText.String = "" Then
+                                        oEditText.String = ""
+
+                                    End If
+
+                                End If
+
+                            End If  ' End pVal.ItemUID 
+
+                    End Select
 
                 End If  ' pVal.FormType
 

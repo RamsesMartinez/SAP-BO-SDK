@@ -150,6 +150,8 @@ Public Class SimpleUDO
                     End If
                     
                 Case "1288"  ' // Move NEXT
+                    DeactivateItems(oForm)
+
                     If oForm.TypeEx = "SampleFormUDO" Then
                         oItem = oForm.Items.Item("btnAddRow")
                         oItem.Enabled = True
@@ -157,18 +159,21 @@ Public Class SimpleUDO
 
 
                 Case "1289"  ' // LAST
+                    DeactivateItems(oForm)
                     If oForm.TypeEx = "SampleFormUDO" Then
                         oItem = oForm.Items.Item("btnAddRow")
                         oItem.Enabled = True
                     End If
 
                 Case "1290"  ' // Move BEGIN
+                    DeactivateItems(oForm)
                     If oForm.TypeEx = "SampleFormUDO" Then
                         oItem = oForm.Items.Item("btnAddRow")
                         oItem.Enabled = True
                     End If
 
                 Case "1291"  ' // Move END
+                    DeactivateItems(oForm)
                     If oForm.TypeEx = "SampleFormUDO" Then
                         oItem = oForm.Items.Item("btnAddRow")
                         oItem.Enabled = True
@@ -199,7 +204,7 @@ Public Class SimpleUDO
 
                         ' // Deactive btn to Add Row to Matrix
                         oItem = oForm.Items.Item("btnAddRow")
-                        oItem.Enabled = False
+                        oItem.Enabled = True
 
                     End If
 

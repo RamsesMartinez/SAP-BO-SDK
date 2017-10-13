@@ -2,22 +2,15 @@
 
 Public Class SimpleUDO
     Private WithEvents oApplication As SAPbouiCOM.Application
+    Private oCompany As SAPbobsCOM.Company
     Private oSboGuiApi As SAPbouiCOM.SboGuiApi
     Private oFilters As SAPbouiCOM.EventFilters
     Private oFilter As SAPbouiCOM.EventFilter
-
-    Private oMatrix As SAPbouiCOM.Matrix
-    Private oColumns As SAPbouiCOM.Columns
-    Private oColumn As SAPbouiCOM.Column
 
     Private oDBDataSource As SAPbouiCOM.DBDataSource
     Private oUserDataSource As SAPbouiCOM.UserDataSource
     Private countIDForm As Integer = 0
 
-
-    ' *****************************
-    ' ******** FUNCTIONS **********
-    ' *****************************
 
     Private Sub StartApp()
         Dim sConnectionString As String
@@ -34,6 +27,16 @@ Public Class SimpleUDO
             ' // Get an initialized application object
             oApplication = oSboGuiApi.GetApplication()
 
+            ' // Set The connection context 
+            SetConnectionContext()
+
+            ' // Connect to Company Data Base
+            If Not ConnectToCompany() = 0 Then
+                oApplication.SetStatusBarMessage("Falló la conexión a la base de datos", SAPbouiCOM.BoMessageTime.bmt_Medium, True)
+                End ' Terminating the Add-On Application
+            End If
+
+            oApplication.SetStatusBarMessage("DI API conectada a: " & oCompany.CompanyName, SAPbouiCOM.BoMessageTime.bmt_Short, False)
 
         Catch ex As Exception
             MsgBox(ex.Message)
@@ -42,6 +45,39 @@ Public Class SimpleUDO
 
     End Sub
 
+    Private Function SetConnectionContext() As Integer
+
+        Dim sCookie As String
+        Dim sConnectionContext As String
+
+        oCompany = New SAPbobsCOM.Company
+
+        '// Acquire the connection context cookie from the DI API.
+        sCookie = oCompany.GetContextCookie
+        sConnectionContext = oApplication.Company.GetConnectionContext(sCookie)
+
+        '// Before setting the SBO Login Context make sure the company is not connected
+        If oCompany.Connected = True Then
+            oCompany.Disconnect()
+        End If
+
+        '// Set the connection context information to the DI API.
+        SetConnectionContext = oCompany.SetSboLoginContext(sConnectionContext)
+
+    End Function
+
+    Private Function ConnectToCompany() As Integer
+
+        '// Establish the connection to the company database.
+        ConnectToCompany = oCompany.Connect
+
+    End Function
+
+
+
+    ' *****************************
+    ' ********* FILTERS  **********
+    ' *****************************
 
     Private Sub SetFilters()
         ' // Set EventFilters Object
@@ -51,222 +87,336 @@ Public Class SimpleUDO
 
             ' // Add the Others Event Types to the Container
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_MENU_CLICK)
-            oFilter.AddEx("SampleFormType")
+            oFilter.AddEx("SampleFormUDO")
 
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST)
-            oFilter.AddEx("SampleFormType")
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED)
+            oFilter.AddEx("SampleFormUDO")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_LOST_FOCUS)
-            oFilter.AddEx("SampleFormType")
+            oFilter.AddEx("SampleFormUDO")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_VALIDATE)
+            oFilter.AddEx("SampleFormUDO")
+            
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_LOAD)
+            oFilter.AddEx("SampleFormUDO")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE)
+            oFilter.AddEx("SampleFormUDO")
 
             oApplication.SetFilter(oFilters)
 
         Catch ex As Exception
             oApplication.SetStatusBarMessage("Error SetFilter: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+
         End Try
 
     End Sub
 
-
-    Private Sub SetDataSourceToForm(ByRef oForm As SAPbouiCOM.Form)
-        oForm.DataSources.UserDataSources.Add("DSCardCode", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-        oForm.DataSources.UserDataSources.Add("DSCardName", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-
-        oDBDataSource = oForm.DataSources.DBDataSources.Add("OUSR")
-        oUserDataSource = oForm.DataSources.UserDataSources.Add("DSIDUser", SAPbouiCOM.BoDataType.dt_SHORT_TEXT, 20)
-
-    End Sub
-
-
-    Private Sub GetMatrixDataFromDataSource()
-        '// Ready Matrix to populate data
-        Try
-            oMatrix.Clear()
-            oMatrix.AutoResizeColumns()
-
-            '// Execute the query with the conditions collection
-            oDBDataSource.Query()
-
-            ' // Add the values for first column (1..2..3... n)
-            For i As Integer = 0 To oDBDataSource.Size - 1
-                oDBDataSource.Offset = i
-                oUserDataSource.Value = i + 1
-                oMatrix.AddRow()
-            Next
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error GetMatrixDataDS: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
-        End Try
-    End Sub
-
-
-    Private Function CreateSampleForm() As Boolean
-        Dim oCreationParams As SAPbouiCOM.FormCreationParams
+    Private Sub oApplication_MenuEvent(ByRef pVal As SAPbouiCOM.MenuEvent, ByRef BubbleEvent As Boolean) Handles oApplication.MenuEvent
+        Dim oForm As SAPbouiCOM.Form
         Dim oItem As SAPbouiCOM.Item
-        Dim oStaticText As SAPbouiCOM.StaticText
-        Dim oEditText As SAPbouiCOM.EditText
-        Dim oButton As SAPbouiCOM.Button
-        Dim oLink As SAPbouiCOM.LinkedButton
+
+        If pVal.BeforeAction Then
+            oForm = oApplication.Forms.ActiveForm
+            Select Case pVal.MenuUID
+
+                Case "SubMenuUDO"
+                    ' // Create the UDO Form or return False
+                    If Not CreateSampleForm("SampleUDOForm.srf") Then
+                        BubbleEvent = False
+
+                    End If
+
+                Case "1281"  ' // Search Mode
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        ' // Enable Navigation Items
+                        oForm.EnableMenu("1288", True)
+                        oForm.EnableMenu("1289", True)
+                        oForm.EnableMenu("1290", True)
+                        oForm.EnableMenu("1291", True)
+
+                    End If
+
+                Case "1282"  ' // Add Mode
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        ' // Disable Navigation Items
+                        oForm.EnableMenu("1288", False)
+                        oForm.EnableMenu("1289", False)
+                        oForm.EnableMenu("1290", False)
+                        oForm.EnableMenu("1291", False)
+
+
+                    End If
+                    
+                Case "1288"  ' // Move NEXT
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+                    End If
+
+
+                Case "1289"  ' // LAST
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+                    End If
+
+                Case "1290"  ' // Move BEGIN
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+                    End If
+
+                Case "1291"  ' // Move END
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+                    End If
+
+            End Select
+
+        Else
+            oForm = oApplication.Forms.ActiveForm
+
+            Select Case pVal.MenuUID
+                Case "SubMenuUDO"
+
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+                    End If
+
+                Case "1281"  ' // Search Mode
+                    
+                    ' // UDO - Search Mode
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("txtCode")
+                        oItem.Enabled = True
+
+                        oItem = oForm.Items.Item("txtName")
+                        oItem.Enabled = True
+
+                        ' // Deactive btn to Add Row to Matrix
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = False
+
+                    End If
+
+                Case "1282"  ' // Add Mode
+                    ' // UDO - Create Mode
+                    If oForm.TypeEx = "SampleFormUDO" Then
+                        oItem = oForm.Items.Item("txtCode")
+                        oItem.Enabled = False
+
+                        oItem = oForm.Items.Item("txtName")
+                        oItem.Enabled = False
+
+                        SetNewUDOCode(oForm)
+
+                        ' // Active Btn to Add Row to matrix
+                        oItem = oForm.Items.Item("btnAddRow")
+                        oItem.Enabled = True
+
+                    End If
+
+            End Select
+        End If
+
+    End Sub
+
+
+    Private Sub oApplication_ItemEvent(ByVal FormUID As String, ByRef pVal As SAPbouiCOM.ItemEvent, ByRef BubbleEvent As Boolean) Handles oApplication.ItemEvent
         Dim oForm As SAPbouiCOM.Form
 
         Try
-            ' // Creating the New form
-            ' *************************
 
-            ' // Create the FormCreationParams Object
-            oCreationParams = oApplication.CreateObject(
-                SAPbouiCOM.BoCreatableObjectType.cot_FormCreationParams)
+            If pVal.BeforeAction Then
 
-            ' // Specify the parameters in the object
-            oCreationParams.UniqueID = "SampleFormID"
-            oCreationParams.FormType = "SampleFormType"
-            oCreationParams.BorderStyle = SAPbouiCOM.BoFormBorderStyle.fbs_Fixed
+                If pVal.FormTypeEx = "SampleFormUDO" Then
 
+                    Select Case pVal.EventType
+                        Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
 
-            ' // Add The New Form to SBO Application
-            If ExistForm(oCreationParams.UniqueID) Then
-                oApplication.SetStatusBarMessage("Ya hay un formulario de Ejercicio Abierto.", SAPbouiCOM.BoMessageTime.bmt_Short, True)
-                Return False
-            End If
+                            If pVal.ItemUID = "1" Then
+                                oForm = oApplication.Forms.Item(FormUID)
 
-            oForm = oApplication.Forms.AddEx(oCreationParams)
-            oForm.Width = 390
-            oForm.Height = 400
-            oForm.Title = "Ejercicio"
+                                If oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
 
+                                    Dim lMaxUdoCode As Integer
+                                    Dim oEditText As SAPbouiCOM.EditText
 
-            '' // Set data Source to form
-            '' **********************************
-            SetDataSourceToForm(oForm)
+                                    oForm = oApplication.Forms.Item(FormUID)
+                                    ' // Validate Max Code in DB
+                                    oEditText = oForm.Items.Item("txtCode").Specific
 
+                                    If ExistsUDOID(oEditText.Value) Then
+                                        lMaxUdoCode = GetMaxUdoCode()
+                                        lMaxUdoCode += 1
 
-            ' // Add Choose From List
-            ' *****************************
-            AddChooseFromList(oForm)
+                                        ' // Set New Value To Code, Name, and Index
 
+                                        ' // Code
+                                        oEditText.String = lMaxUdoCode.ToString
 
-            ' // Set Card Code items
-            ' ************************
+                                        ' // Index
+                                        oEditText = oForm.Items.Item("txtUDOID").Specific
+                                        oEditText.String = lMaxUdoCode.ToString
 
-            ' // Adding Static text for CardCode
-            oItem = oForm.Items.Add("LblCCode", SAPbouiCOM.BoFormItemTypes.it_STATIC)
-            With oItem
-                .Left = 40
-                .Width = 90
-                .Top = 50
-                .Height = 16
-                oStaticText = oItem.Specific
-                oStaticText.Caption = "Código del cliente:"
+                                        ' // Name
+                                        oEditText = oForm.Items.Item("txtName").Specific
+                                        oEditText.String = lMaxUdoCode.ToString
 
-            End With
+                                    End If
+                                End If
 
 
-            ' // Adding Edit Text for CardCode
-            oItem = oForm.Items.Add("TxtCCode", SAPbouiCOM.BoFormItemTypes.it_EDIT)
-            With oItem
-                .Left = 160
-                .Width = 160
-                .Top = 50
-                .Height = 16
-                oEditText = oItem.Specific
-                oEditText.DataBind.SetBound(True, "", "DSCardCode")
-                oEditText.ChooseFromListUID = "CFLCardCod"
-                oEditText.ChooseFromListAlias = "CardCode"
-            End With
+
+                            End If
+                        Case SAPbouiCOM.BoEventTypes.et_VALIDATE
+
+                            If pVal.ItemUID = "txtCode" Then
+                                Dim oEditText As SAPbouiCOM.EditText
+                                Dim sCode As String
+
+                                ' // Copy txtCode in txtUDOID
+                                oForm = oApplication.Forms.Item(FormUID)
+
+                                oEditText = oForm.Items.Item("txtCode").Specific
+                                sCode = oEditText.String
+
+                                oEditText = oForm.Items.Item("txtUDOID").Specific
+                                oEditText.String = sCode
+
+                            End If
+
+                    End Select
+
+                End If  ' pVal.FormType
 
 
-            ' // Adding Linked Button for CardCode
-            oItem = oForm.Items.Add("lnkCCode", SAPbouiCOM.BoFormItemTypes.it_LINKED_BUTTON)
-            With oItem
-                .LinkTo = "TxtCCode"
-                .Left = 130
-                .Width = 30
-                .Top = 50
-                .Height = 16
-                oLink = oForm.Items.Item("lnkCCode").Specific
-                oLink.LinkedObject = SAPbouiCOM.BoLinkedObject.lf_BusinessPartner
+            ElseIf Not pVal.BeforeAction Then
 
-            End With
+                If pVal.FormTypeEx = "SampleFormUDO" Then
 
+                    Select Case pVal.EventType
 
-            ' // Set CardName items
-            ' ************************
+                        Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
+                            oForm = oApplication.Forms.Item(FormUID)
 
-            ' // Adding Static Text for CardName
-            oItem = oForm.Items.Add("LblCName", SAPbouiCOM.BoFormItemTypes.it_STATIC)
-            With oItem
-                .Left = 40
-                .Width = 110
-                .Top = 70
-                .Height = 16
-                oStaticText = oItem.Specific
-                oStaticText.Caption = "Nombre del cliente:"
+                            If pVal.ItemUID = "1" Then
 
-            End With
+                                ' // UDO CREATED
+                                If oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
+                                    SetNewUDOCode(oForm)
 
-            ' // Adding Edit Text for CardName
-            oItem = oForm.Items.Add("TxtCName", SAPbouiCOM.BoFormItemTypes.it_EDIT)
-            With oItem
-                .Left = 160
-                .Width = 160
-                .Height = 16
-                .Top = 70
-                .LinkTo = "TxtCCode"
-                oEditText = oItem.Specific
-                oEditText.DataBind.SetBound(True, "", "DSCardName")
-                oEditText.ChooseFromListUID = "CFLCardNam"
-                oEditText.ChooseFromListAlias = "CardName"
+                                ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_VIEW_MODE Then
+                                    ' // Deactivate edit texts
+                                    DeactivateItems(oForm)
 
-            End With
+                                ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE Then
+                                    ' // Deactivate edit texts
+                                    DeactivateItems(oForm)
 
+                                    ' // Deactivate Navigation Menu
+                                    oForm.EnableMenu("1288", False)
+                                    oForm.EnableMenu("1289", False)
+                                    oForm.EnableMenu("1290", False)
+                                    oForm.EnableMenu("1291", False)
+                                End If
 
-            ' // Set Buttons
-            ' ************************
+                            End If
 
-            ' // Adding <Actualizar> Button
-            oItem = oForm.Items.Add("1", SAPbouiCOM.BoFormItemTypes.it_BUTTON)
-            With oItem
-                .Left = 6
-                .Width = 65
-                .Top = 300
-                .Height = 19
-                oButton = oItem.Specific
-                oButton.Caption = "Actualizar"
+                        Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
+                            oForm = oApplication.Forms.Item(FormUID)
 
-            End With
+                            If oForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE Then
+                                ' // Deactivate edit texts
+                                DeactivateItems(oForm)
+                            End If
 
+                            ' // Checks Form Mode Status
 
-            ' // Adding <Cancelar> Button
-            oItem = oForm.Items.Add("2", SAPbouiCOM.BoFormItemTypes.it_BUTTON)
-            With oItem
-                .Left = 75
-                .Width = 65
-                .Top = 300
-                .Height = 19
-                oButton = oItem.Specific
-                oButton.Caption = "Cancelar"
-            End With
+                        Case SAPbouiCOM.BoEventTypes.et_FORM_LOAD
+                            oForm = oApplication.Forms.Item(FormUID)
+                            ' // Deactivate Navigation Menu
+                            oForm.EnableMenu("1288", False)
+                            oForm.EnableMenu("1289", False)
+                            oForm.EnableMenu("1290", False)
+                            oForm.EnableMenu("1291", False)
+                    End Select
 
+                End If  ' pVal.FormType
 
-            ' // Add the matrix and Set form visible
-            AddMatrixToForm(oForm)
+            End If  ' pVal.Before Action
 
-            '// Bind the Form's items with the desired data source
-            BindDataToMatrix()
-
-            ' // Obtains all the form data
-            GetMatrixDataFromDataSource()
-
-            ' // Show the Form
-            oForm.Visible = True
-
-            Return True
         Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error CreateSampleForm: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
-            Return False
+            oApplication.SetStatusBarMessage("Error Item Event: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+
         End Try
 
-    End Function
+    End Sub
 
+
+
+    ' *****************************
+    ' ******** MENU ITEMS  ****+***
+    ' *****************************
+
+    Private Sub SetMenuItems()
+        Dim oMenus As SAPbouiCOM.Menus
+        Dim oMenuItem As SAPbouiCOM.MenuItem
+        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
+
+        Try
+            oMenuItem = oApplication.Menus.Item("43520")
+            oMenus = oMenuItem.SubMenus
+
+            oCreationPackage = oApplication.CreateObject(
+                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
+
+
+            '// Menu UDO
+            ' ***********************
+            oMenuItem = oApplication.Menus.Item("43520")
+            oMenus = oMenuItem.SubMenus
+
+            ' // Set New Menu Item values into the MenuCreationPackage Object
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
+            oCreationPackage.UniqueID = "UDOMenu"
+            oCreationPackage.String = "Ejemplo UDO"
+            oCreationPackage.Enabled = True
+            oCreationPackage.Position = 12
+
+            ' // Add the new Menu
+            If oApplication.Menus.Exists("UDOMenu") Then
+                oApplication.Menus.RemoveEx("UDOMenu")
+            End If
+
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Sets config to New SubMenu Item
+            oMenuItem = oApplication.Menus.Item("UDOMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "SubMenuUDO"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Ventana UDO"
+            oCreationPackage.Enabled = True
+
+            ' // Add the New Sum Menu Item
+            oMenus.AddEx(oCreationPackage)
+
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error SetMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+
+        End Try
+    End Sub
+
+
+
+    ' *****************************
+    ' ******** FUNCTIONS **********
+    ' *****************************
 
     Private Function CreateSampleForm(ByVal FileName As String) As Boolean
         Dim oCreationParams As SAPbouiCOM.FormCreationParams
@@ -286,9 +436,9 @@ Public Class SimpleUDO
             ' // Specify the parameters in the object
             countIDForm += 1
             oCreationParams.UniqueID = countIDForm.ToString
-            oCreationParams.FormType = "SampleFormType"
+            oCreationParams.FormType = "SampleFormUDO"
             oCreationParams.BorderStyle = SAPbouiCOM.BoFormBorderStyle.fbs_Fixed
-
+            oCreationParams.ObjectType = "UDO1"
 
             oXmlDoc = New Xml.XmlDocument
 
@@ -302,77 +452,117 @@ Public Class SimpleUDO
 
             oCreationParams.XmlData = oXmlDoc.InnerXml
 
-
             oForm = oApplication.Forms.AddEx(oCreationParams)
+
+
+            '' // Set data Source to form
+            '' **********************************
+            SetDataSourceToForm(oForm)
+
+
+            '// Bind the Form's items with the desired data source
+            BindDataToForm(oForm)
+
+
+            ' // Obtains all the form data
+            'GetMatrixDataFromDataSource(oForm)
+
+            ' // Set the Form behaviour
+
+            oForm.DataBrowser.BrowseBy = "txtUDOID"
+            oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE
+
+            SetNewUDOCode(oForm)
 
         Catch ex As Exception
             oApplication.SetStatusBarMessage("Error CreateSampleFormSRF" & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
             Return False
+
         End Try
 
         Return True
+
     End Function
 
+    Private Sub SetDataSourceToForm(ByRef oForm As SAPbouiCOM.Form)
+        oForm.DataSources.DBDataSources.Add("@ENCABEZADO")
+        oForm.DataSources.DBDataSources.Add("@DETALLE")
 
-    Private Sub AddMatrixToForm(ByRef oForm As SAPbouiCOM.Form)
+    End Sub
 
-        '// we will use the following object to add items to our form
+    Private Sub BindDataToForm(ByRef oForm As SAPbouiCOM.Form)
+        Dim oColumn As SAPbouiCOM.Column
+        Dim oColumns As SAPbouiCOM.Columns
+        Dim oMatrix As SAPbouiCOM.Matrix
         Dim oItem As SAPbouiCOM.Item
+        Dim oEditText As SAPbouiCOM.EditText
 
-        '// Adding a Matrix item
-        '//***************************
+        Try
+            ' // Bind Data to EditTexts
+            ' ************************
+            oItem = oForm.Items.Item("txtUDOID")
+            oEditText = oItem.Specific
+            oEditText.DataBind.SetBound(True, "@ENCABEZADO", "U_INDEX")
 
-        oItem = oForm.Items.Add("Matrix1", SAPbouiCOM.BoFormItemTypes.it_MATRIX)
-        oItem.Left = 30
-        oItem.Width = 320
-        oItem.Top = 120
-        oItem.Height = 150
+            '// txtCode
+            oItem = oForm.Items.Item("txtCode")
+            oEditText = oItem.Specific
+            oEditText.DataBind.SetBound(True, "@ENCABEZADO", "Code")
 
-        oMatrix = oItem.Specific
-        oColumns = oMatrix.Columns
+            '// txtName
+            oItem = oForm.Items.Item("txtName")
+            oEditText = oItem.Specific
+            oEditText.DataBind.SetBound(True, "@ENCABEZADO", "Name")
 
-        ' // Add a column for User SAP ID
-        oColumn = oColumns.Add("DSUserID", SAPbouiCOM.BoFormItemTypes.it_EDIT)
-        With oColumn
-            .TitleObject.Caption = "#"
-            .Width = 30
-            .Editable = False
-        End With
-
-
-        '// Add a column for BP Card Name
-        oColumn = oColumns.Add("DSUserName", SAPbouiCOM.BoFormItemTypes.it_EDIT)
-        With oColumn
-            .TitleObject.Caption = "UserName"
-            .Width = 150
-            .Editable = False
-        End With
+            '// txtField1
+            oItem = oForm.Items.Item("txtField1")
+            oEditText = oItem.Specific
+            oEditText.DataBind.SetBound(True, "@ENCABEZADO", "U_CAMPO1")
 
 
-        '// Add a column for BP Card Name
-        oColumn = oColumns.Add("DSEmail", SAPbouiCOM.BoFormItemTypes.it_EDIT)
-        With oColumn
-            .TitleObject.Caption = "e-mail"
-            .Width = 190
-            .Editable = False
-        End With
 
+            ' // Bind Data to Matrix
+            ' ************************
+
+            oMatrix = oForm.Items.Item("matrixUDO").Specific
+
+            oColumns = oMatrix.Columns
+
+            ' // Code
+            oColumn = oColumns.Item(1)
+            oColumn.DataBind.SetBound(True, "@DETALLE", "Code")
+
+            ' // LineID
+            oColumn = oColumns.Item(2)
+            oColumn.DataBind.SetBound(True, "@DETALLE", "LineID")
+
+            ' // CAMPO_1
+            oColumn = oColumns.Item(3)
+            oColumn.DataBind.SetBound(True, "@DETALLE", "U_CAMPO1")
+
+
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error BindDataToForm: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+
+        End Try
     End Sub
 
+    Private Sub GetMatrixDataFromDataSource(ByRef oForm As SAPbouiCOM.Form)
+        Dim oMatrix As SAPbouiCOM.Matrix
 
-    Private Sub BindDataToMatrix()
-        '// getting the matrix column by the UID
-        oColumn = oColumns.Item("DSUserName")
-        oColumn.DataBind.SetBound(True, "OUSR", "USER_CODE")
+        Try
+            oMatrix = oForm.Items.Item("matrixUDO").Specific
+            oMatrix.Clear()
+            oMatrix.AutoResizeColumns()
+            oDBDataSource.Query()
+            oMatrix.LoadFromDataSource()
 
-        oColumn = oColumns.Item("DSEmail")
-        oColumn.DataBind.SetBound(True, "OUSR", "E_Mail")
 
-        oColumn = oColumns.Item("DSUserID")
-        oColumn.DataBind.SetBound(True, "", "DSIDUser")
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error GetMatrixDataDS: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
 
+        End Try
     End Sub
-
 
     Private Function ExistForm(ByVal sFormID As String) As Boolean
         For i As Integer = 0 To oApplication.Forms.Count - 1
@@ -383,275 +573,67 @@ Public Class SimpleUDO
         Return False
     End Function
 
+    Private Function GetMaxUdoCode() As Integer
+        Dim oRecordSet As SAPbobsCOM.Recordset
 
-    Private Sub AddChooseFromList(ByRef oForm As SAPbouiCOM.Form)
-        Dim oCFLs As SAPbouiCOM.ChooseFromListCollection
-        Dim oCons As SAPbouiCOM.Conditions
-        Dim oCon As SAPbouiCOM.Condition
-        Dim oCFL As SAPbouiCOM.ChooseFromList
-        Dim oCFLCreationParams As SAPbouiCOM.ChooseFromListCreationParams
+        oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+        oRecordSet.DoQuery("SELECT MAX(CAST(Code AS INT)) AS INT FROM [@ENCABEZADO]")
+        GetMaxUdoCode = Convert.ToUInt32(oRecordSet.Fields.Item(0).Value)
 
-        Try
-            oCFLs = oForm.ChooseFromLists
+    End Function
 
-            oCFLCreationParams = oApplication.CreateObject(SAPbouiCOM.BoCreatableObjectType.cot_ChooseFromListCreationParams)
-            oCFLCreationParams.MultiSelection = False
-            oCFLCreationParams.ObjectType = SAPbouiCOM.BoLinkedObject.lf_BusinessPartner
+    Private Function ExistsUDOID(ByVal sCode As String) As Boolean
+        Dim oRecordSet As SAPbobsCOM.Recordset
 
-            ' Adding CFL for CardCode
-            oCFLCreationParams.UniqueID = "CFLCardCod"
-            oCFL = oCFLs.Add(oCFLCreationParams)
+        oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+        oRecordSet.DoQuery("SELECT Code FROM [@ENCABEZADO] WHERE Code=" & sCode & "")
 
-            ' Adding Conditions to CFLCardCod
-            oCons = oCFL.GetConditions()
-            oCon = oCons.Add()
-            oCon.Alias = "CardType"
-            oCon.Operation = SAPbouiCOM.BoConditionOperation.co_EQUAL
-            oCon.CondVal = "C"
-            oCFL.SetConditions(oCons)
-
-
-            ' Adding CFL for CFLCardNam
-            oCFLCreationParams.UniqueID = "CFLCardNam"
-            oCFL = oCFLs.Add(oCFLCreationParams)
-
-            ' Adding Conditions to CFLCardNam
-            oCons = oCFL.GetConditions()
-            oCon = oCons.Add()
-            oCon.Alias = "CardType"
-            oCon.Operation = SAPbouiCOM.BoConditionOperation.co_EQUAL
-            oCon.CondVal = "C"
-            oCFL.SetConditions(oCons)
-
-
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error AddChooseFromList: " & ex.Message)
-
-        End Try
-    End Sub
-
-
-    ' *****************************
-    ' ********* MENU ITEMS  **********
-    ' *****************************
-    Private Sub SetMenuItems()
-        Dim oMenus As SAPbouiCOM.Menus
-        Dim oMenuItem As SAPbouiCOM.MenuItem
-        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
-
-        Try
-            oMenuItem = oApplication.Menus.Item("43520")
-            oMenus = oMenuItem.SubMenus
-
-            oCreationPackage = oApplication.CreateObject(
-                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
-
-
-            '// Menu Ejercicio
-            ' ***********************
-
-            ' // Set New Menu Item values into the MenuCreationPackage Object
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
-            oCreationPackage.UniqueID = "SampleMenu"
-            oCreationPackage.String = "Ejercicio"
-            oCreationPackage.Enabled = True
-            oCreationPackage.Position = 11
-
-            ' // Add the new Menu
-            If oApplication.Menus.Exists("SampleMenu") Then
-                oApplication.Menus.RemoveEx("SampleMenu")
-            End If
-
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Sets config to New SubMenu Item
-            oMenuItem = oApplication.Menus.Item("SampleMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "SubMenu001"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Ventana ejercicio"
-            oCreationPackage.Enabled = True
-
-            ' // Add the New Sum Menu Item
-            oMenus.AddEx(oCreationPackage)
-
-
-            '// Menu UDO
-            ' ***********************
-            oMenuItem = oApplication.Menus.Item("43520")
-            oMenus = oMenuItem.SubMenus
-
-            ' // Set New Menu Item values into the MenuCreationPackage Object
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
-            oCreationPackage.UniqueID = "SampleUDOMenu"
-            oCreationPackage.String = "Ejercicio UDO"
-            oCreationPackage.Enabled = True
-            oCreationPackage.Position = 12
-
-            ' // Add the new Menu
-            If oApplication.Menus.Exists("SampleUDOMenu") Then
-                oApplication.Menus.RemoveEx("SampleUDOMenu")
-            End If
-
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Sets config to New SubMenu Item
-            oMenuItem = oApplication.Menus.Item("SampleUDOMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "SubMenu002"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Ventana UDO"
-            oCreationPackage.Enabled = True
-
-            ' // Add the New Sum Menu Item
-            oMenus.AddEx(oCreationPackage)
-
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error SetMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
-
-        End Try
-    End Sub
-
-
-    Private Sub SetFormMenuItems(ByRef oForm As SAPbouiCOM.Form)
-        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
-
-        Try
-            oCreationPackage = oApplication.CreateObject(SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.UniqueID = "MyMenu001"
-            oCreationPackage.String = "Mi menú Ir A"
-
-            oForm.Menu.AddEx(oCreationPackage)
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error SetFormMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, False)
-        End Try
-
-    End Sub
-
-
-    ' *****************************
-    ' ********* FILTERS  **********
-    ' *****************************
-
-    Private Sub oApplication_MenuEvent(ByRef pVal As SAPbouiCOM.MenuEvent, ByRef BubbleEvent As Boolean) Handles oApplication.MenuEvent
-
-        If pVal.BeforeAction Then
-
-            If pVal.MenuUID = "SubMenu001" Then
-                If Not CreateSampleForm() Then
-                    BubbleEvent = False
-
-                End If
-
-            ElseIf pVal.MenuUID = "SubMenu002" Then
-                If Not CreateSampleForm("SampleUDOForm.srf") Then
-                    BubbleEvent = False
-
-                End If
-
-            ElseIf pVal.MenuUID = "MyMenu001" Then
-                oApplication.SetStatusBarMessage("Menu del formulario presionado".ToString, SAPbouiCOM.BoMessageTime.bmt_Short, False)
-
-            End If
-
-        Else
-            If pVal.MenuUID = "SubMenu001" Then
-                Dim oForm As SAPbouiCOM.Form
-
-                oForm = oApplication.Forms.Item("SampleFormID")
-                SetFormMenuItems(oForm)
-
-            End If
+        If oRecordSet.Fields.Item(0).Value = sCode Then
+            Return True
         End If
 
-    End Sub
+        Return False
+    End Function
 
+    Private Sub SetNewUDOCode(ByRef oForm As SAPbouiCOM.Form)
 
-    Private Sub oApplication_ItemEvent(ByVal FormUID As String, ByRef pVal As SAPbouiCOM.ItemEvent, ByRef BubbleEvent As Boolean) Handles oApplication.ItemEvent
-        Try
-            If Not pVal.BeforeAction Then
+        Dim lNewUDOID As Integer
 
-                ' // Cath Actions from Message box
+        lNewUDOID = GetMaxUdoCode() + 1
 
-                If pVal.FormTypeEx = "SampleFormType" Then
-                    Select Case pVal.EventType
-                        Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
+        Dim oEditText As SAPbouiCOM.EditText
 
-                            If pVal.ItemUID = "TxtCCode" Or pVal.ItemUID = "TxtCName" Then
-                                Dim oCFLEvento As SAPbouiCOM.IChooseFromListEvent
-                                Dim oCFL As SAPbouiCOM.ChooseFromList
-                                Dim oDataTable As SAPbouiCOM.DataTable
-                                Dim sCFL_ID, sCardCode, sCardName As String
-                                Dim oForm As SAPbouiCOM.Form
+        ' // Set Default data 
 
-                                oForm = oApplication.Forms.Item("SampleFormID")
+        oEditText = oForm.Items.Item("txtUDOID").Specific
+        oEditText.String = lNewUDOID
 
-                                oCFLEvento = pVal
-                                sCFL_ID = oCFLEvento.ChooseFromListUID
-                                oCFL = oForm.ChooseFromLists.Item(sCFL_ID)
-                                oDataTable = oCFLEvento.SelectedObjects
+        oEditText = oForm.Items.Item("txtCode").Specific
+        oEditText.String = lNewUDOID
 
-                                If Not oDataTable Is Nothing Then
-                                    ' // Get Cardr Values from table result
-                                    sCardCode = oDataTable.GetValue(0, 0)
-                                    sCardName = oDataTable.GetValue(1, 0)
-
-                                    ' // Set new values to Edit Texts
-                                    oForm.DataSources.UserDataSources.Item("DSCardCode").ValueEx = sCardCode
-                                    oForm.DataSources.UserDataSources.Item("DSCardName").ValueEx = sCardName
-
-                                End If
-
-                            End If
-
-                        Case SAPbouiCOM.BoEventTypes.et_LOST_FOCUS
-                            Dim oEditText As SAPbouiCOM.EditText
-                            Dim oForm As SAPbouiCOM.Form
-
-                            oForm = oApplication.Forms.Item(FormUID)
-
-                            ' // Clean the text of both if less one has nothing
-                            If pVal.ItemUID = "TxtCCode" Then
-                                oEditText = oForm.Items.Item("TxtCCode").Specific
-
-                                If oEditText.String = "" Then
-                                    oEditText = oForm.Items.Item("TxtCName").Specific
-
-                                    If Not oEditText.String = "" Then
-                                        oEditText.String = ""
-
-                                    End If
-
-                                End If
-
-                            ElseIf pVal.ItemUID = "TxtCName" Then
-                                oEditText = oForm.Items.Item("TxtCName").Specific
-
-                                If oEditText.String = "" Then
-                                    oEditText = oForm.Items.Item("TxtCCode").Specific
-
-                                    If Not oEditText.String = "" Then
-                                        oEditText.String = ""
-
-                                    End If
-
-                                End If
-
-                            End If  ' End pVal.ItemUID 
-
-                    End Select
-
-                End If  ' pVal.FormType
-
-            End If  ' pVal.Before Action
-
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error Item Event: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
-        End Try
+        oEditText = oForm.Items.Item("txtName").Specific
+        oEditText.String = lNewUDOID
 
     End Sub
 
+    Private Sub DeactivateItems(ByRef oForm As SAPbouiCOM.Form)
+        Dim oItem As SAPbouiCOM.Item
+        Dim oEdiTtext As SAPbouiCOM.EditText
+
+        ' // Deactivate edit texts
+
+        oItem = oForm.Items.Item("txtCode")
+        oEdiTtext = oItem.Specific
+        oEdiTtext.Active = False
+        oItem.Enabled = False
+
+
+        oItem = oForm.Items.Item("txtName")
+        oEdiTtext = oItem.Specific
+        oEdiTtext.Active = False
+        oItem.Enabled = False
+
+    End Sub
 
     Public Sub New()
         StartApp()
@@ -661,4 +643,7 @@ Public Class SimpleUDO
         SetFilters()
 
     End Sub
+
+
 End Class
+

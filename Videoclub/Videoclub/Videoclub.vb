@@ -105,8 +105,8 @@ Public Class Videoclub
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_LOAD)
             oFilter.AddEx("VC_Catalogo")
 
-            'oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE)
-            'oFilter.AddEx("VC_Catalogo")
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_CLOSE)
+            oFilter.AddEx("VC_Catalogo")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_VISIBLE)
             oFilter.AddEx("VC_Catalogo")
@@ -224,12 +224,10 @@ Public Class Videoclub
         Dim oForm As SAPbouiCOM.Form
 
         Try
-
             If pVal.BeforeAction Then
                 If pVal.FormTypeEx = "VC_Catalogo" Then
                     Select Case pVal.EventType
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
-
                             ' // BUTON 1 PRESSED
                             If pVal.ItemUID = "1" Then
                                 oForm = oApplication.Forms.ActiveForm
@@ -266,6 +264,7 @@ Public Class Videoclub
                             End If
 
                     End Select
+                Else
 
                 End If  ' pVal.FormType
 
@@ -277,10 +276,10 @@ Public Class Videoclub
                     Select Case pVal.EventType
 
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
-                            oForm = oApplication.Forms.ActiveForm
+
 
                             If pVal.ItemUID = "1" Then
-
+                                oForm = oApplication.Forms.ActiveForm
                                 ' // MOVIE CREATED AND UPDATE FORM
                                 If oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
                                     Dim oComboBox As SAPbouiCOM.ComboBox
@@ -329,7 +328,7 @@ Public Class Videoclub
                             oForm.EnableMenu("1289", False)
                             oForm.EnableMenu("1290", False)
                             oForm.EnableMenu("1291", False)
-                        
+
                     End Select
 
                 ElseIf pVal.FormTypeEx = "VC_Renta" Then
@@ -356,8 +355,8 @@ Public Class Videoclub
                                     sName = oDataTable.GetValue(1, 0)
 
                                     ' // Set new values to Edit Texts
-                                    oForm.DataSources.UserDataSources.Item("DSRe_Clie").ValueEx = sCode
-                                    oForm.DataSources.UserDataSources.Item("DSRe_Name").ValueEx = sName
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Clie").ValueEx = sCode
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Name").ValueEx = sName
 
                                 End If
 
@@ -368,8 +367,8 @@ Public Class Videoclub
                                     sName = oDataTable.GetValue(1, 0)
                                     sCode = oDataTable.GetValue(0, 0)
                                     ' // Set new values to Edit Texts
-                                    oForm.DataSources.UserDataSources.Item("DSRe_Movi").ValueEx = sName
-                                    oForm.DataSources.UserDataSources.Item("DSRe_MCode").ValueEx = sCode
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Movi").ValueEx = sName
+                                    oForm.DataSources.UserDataSources.Item("DSRen_MCod").ValueEx = sCode
 
                                 End If
 
@@ -383,26 +382,52 @@ Public Class Videoclub
                                 Dim sClientCode, sClientName, sMovieCode As String
 
                                 oForm = oApplication.Forms.ActiveForm
-                                
+
                                 If FieldsAreValid(oForm) Then
-                                    sClientCode = oForm.DataSources.UserDataSources.Item("DSRe_Clie").Value
-                                    sMovieCode = oForm.DataSources.UserDataSources.Item("DSRe_MCode").Value
-                                    sClientName = oForm.DataSources.UserDataSources.Item("DSRe_Name").Value
+                                    sClientCode = oForm.DataSources.UserDataSources.Item("DSRen_Clie").Value
+                                    sMovieCode = oForm.DataSources.UserDataSources.Item("DSRen_MCod").Value
+                                    sClientName = oForm.DataSources.UserDataSources.Item("DSRen_Name").Value
                                     oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
 
-                                    ' // Change Movie Status
-                                    sSQL = "UPDATE [@PELICULAS] SET U_STATUS='Rentada', U_CLIENTE='" & sClientCode & "' WHERE Code='" & sMovieCode & "'"
-                                    oRecordSet.DoQuery(sSQL)
-                                    oApplication.MessageBox("Pelicula rentada a " & sClientName)
+                                    If IsValidUpdate(oForm, sMovieCode) Then
+                                        ' // Change Movie Status
+                                        sSQL = "UPDATE [@PELICULAS] SET U_STATUS='Rentada', U_CLIENTE='" & sClientCode & "' WHERE Code='" & sMovieCode & "'"
+                                        oRecordSet.DoQuery(sSQL)
+                                        oApplication.MessageBox("Éxito. Película rentada a " & sClientName)
+
+                                    End If
 
                                     ' // Clean Movie Field
-                                    oForm.DataSources.UserDataSources.Item("DSRe_Movi").Value = ""
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Movi").Value = ""
+
+                                End If
+
+                            ElseIf pVal.ItemUID = "btnClean" Then
+                                oForm = oApplication.Forms.ActiveForm
+                                oForm.DataSources.UserDataSources.Item("DSRen_Clie").Value = ""
+                                oForm.DataSources.UserDataSources.Item("DSRen_Name").Value = ""
+                                oForm.DataSources.UserDataSources.Item("DSRen_Movi").Value = ""
+                                oForm.DataSources.UserDataSources.Item("DSRen_MCod").Value = ""
+
+                            End If
+
+                        Case SAPbouiCOM.BoEventTypes.et_VALIDATE
+                            oForm = oApplication.Forms.ActiveForm
+
+                            ' // Clean txtName EditText or txtClient EditText if one of these is cleaned
+                            If pVal.ItemUID = "txtClient" Or pVal.ItemUID = "txtName" Then
+                                Dim oEditTextName, oEditTextCode As SAPbouiCOM.EditText
+
+                                oEditTextCode = oForm.Items.Item("txtClient").Specific
+                                oEditTextName = oForm.Items.Item("txtName").Specific
+
+                                If oEditTextCode.String = "" Or oEditTextName.String = "" Then
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Clie").Value = ""
+                                    oForm.DataSources.UserDataSources.Item("DSRen_Name").Value = ""
 
                                 End If
 
                             End If
-                        Case SAPbouiCOM.BoEventTypes.et_VALIDATE
-
 
                     End Select
 
@@ -509,6 +534,7 @@ Public Class Videoclub
         Dim sPath As String
         Dim oForm As SAPbouiCOM.Form
         Dim oComboBox As SAPbouiCOM.ComboBox
+        Dim oItem As SAPbouiCOM.Item
 
         Try
 
@@ -554,25 +580,40 @@ Public Class Videoclub
 
 
             Select Case FileName
-                ' // Add content to combo box
+                ' // Set extra content
                 Case "Catalogo.srf"
-                    oComboBox = oForm.Items.Item("cbPlace").Specific
+
+                    oItem = oForm.Items.Item("txtCode")
+                    oItem.AffectsFormMode = False
+
+                    oItem = oForm.Items.Item("txtIndex")
+                    oItem.AffectsFormMode = False
+
+                    oItem = oForm.Items.Item("txtIndex")
+                    oItem.AffectsFormMode = False
+
+                    oItem = oForm.Items.Item("cbPlace")
+                    oItem.AffectsFormMode = False
+                    oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Ubicacion 1", "Ubicacion 1")
                     oComboBox.ValidValues.Add("Ubicacion 2", "Ubicacion 2")
                     oComboBox.ValidValues.Add("Ubicacion 3", "Ubicacion 3")
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
 
-                    oComboBox = oForm.Items.Item("cbGenre").Specific
+                    oItem = oForm.Items.Item("cbGenre")
+                    oItem.AffectsFormMode = False
+                    oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Genero 1", "Genero 1")
                     oComboBox.ValidValues.Add("Genero 2", "Genero 2")
                     oComboBox.ValidValues.Add("Genero 3", "Genero 3")
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
 
-                Case "Renta.srf"
+                    oForm.DefButton = "1"
 
+                Case "Renta.srf"
+                    oForm.DefButton = "btnRent"
 
                 Case "Reporte.srf"
-
 
                 Case "Retorno.srf"
 
@@ -625,10 +666,10 @@ Public Class Videoclub
                     oForm.DataSources.DBDataSources.Add("@PELICULAS")
 
                 Case "VC_Renta"
-                    oForm.DataSources.UserDataSources.Add("DSRe_Clie", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-                    oForm.DataSources.UserDataSources.Add("DSRe_Name", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-                    oForm.DataSources.UserDataSources.Add("DSRe_Movi", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
-                    oForm.DataSources.UserDataSources.Add("DSRe_MCode", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
+                    oForm.DataSources.UserDataSources.Add("DSRen_Clie", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
+                    oForm.DataSources.UserDataSources.Add("DSRen_Name", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
+                    oForm.DataSources.UserDataSources.Add("DSRen_Movi", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
+                    oForm.DataSources.UserDataSources.Add("DSRen_MCod", SAPbouiCOM.BoDataType.dt_SHORT_TEXT)
 
                     oDBDataSource = oForm.DataSources.DBDataSources.Add("OUSR")
                     oDBDataSource = oForm.DataSources.DBDataSources.Add("@PELICULAS")
@@ -663,7 +704,7 @@ Public Class Videoclub
 
 
                     ' Adding CFL for Card Code
-                    oCFLCreationParams.UniqueID = "CFLRe_Clie"
+                    oCFLCreationParams.UniqueID = "CFLRen_Cli"
                     oCFL = oCFLs.Add(oCFLCreationParams)
 
                     ' Adding Conditions to Card Code
@@ -676,7 +717,7 @@ Public Class Videoclub
 
 
                     ' Adding CFL for Card Name
-                    oCFLCreationParams.UniqueID = "CFLRe_Name"
+                    oCFLCreationParams.UniqueID = "CFLRen_Name"
                     oCFL = oCFLs.Add(oCFLCreationParams)
 
                     ' Adding Conditions to Names
@@ -690,7 +731,7 @@ Public Class Videoclub
 
                     oCFLCreationParams.ObjectType = "VIDEOCLUB"
                     ' Adding CFL for Movie Name
-                    oCFLCreationParams.UniqueID = "CFLRe_Movi"
+                    oCFLCreationParams.UniqueID = "CFLRen_Movi"
                     oCFL = oCFLs.Add(oCFLCreationParams)
 
                     ' Adding Conditions to Movies
@@ -741,18 +782,18 @@ Public Class Videoclub
                 Case "VC_Renta"
                     ' // Set Choose From List
                     oEditText = oForm.Items.Item("txtClient").Specific
-                    oEditText.DataBind.SetBound(True, "", "DSRe_Clie")
-                    oEditText.ChooseFromListUID = "CFLRe_Clie"
+                    oEditText.DataBind.SetBound(True, "", "DSRen_Clie")
+                    oEditText.ChooseFromListUID = "CFLRen_Cli"
                     oEditText.ChooseFromListAlias = "CardCode"
 
                     oEditText = oForm.Items.Item("txtName").Specific
-                    oEditText.DataBind.SetBound(True, "", "DSRe_Name")
-                    oEditText.ChooseFromListUID = "CFLRe_Name"
+                    oEditText.DataBind.SetBound(True, "", "DSRen_Name")
+                    oEditText.ChooseFromListUID = "CFLRen_Name"
                     oEditText.ChooseFromListAlias = "CardName"
 
                     oEditText = oForm.Items.Item("txtMovie").Specific
-                    oEditText.DataBind.SetBound(True, "", "DSRe_Movi")
-                    oEditText.ChooseFromListUID = "CFLRe_Movi"
+                    oEditText.DataBind.SetBound(True, "", "DSRen_Movi")
+                    oEditText.ChooseFromListUID = "CFLRen_Movi"
                     oEditText.ChooseFromListAlias = "Name"
 
                 Case "VC_Reporte"
@@ -874,9 +915,12 @@ Public Class Videoclub
         oEdiTtext = oItem.Specific
         oEdiTtext.Active = True
 
-        oApplication.SetStatusBarMessage("HOLA")
-
     End Sub
+
+
+    ' *****************************
+    ' ******** VALIDATIONS **********
+    ' *****************************
 
     Private Function FieldsAreValid(ByRef oForm As SAPbouiCOM.Form) As Boolean
         Dim oEditText As SAPbouiCOM.EditText
@@ -945,6 +989,35 @@ Public Class Videoclub
         End Try
 
         Return True
+    End Function
+
+    Private Function IsValidUpdate(ByRef oForm As SAPbouiCOM.Form, ByVal sMovieCode As String) As Boolean
+        Dim oRecordSet As SAPbobsCOM.Recordset
+        Dim sSQL As String
+
+        Try
+            Select Case oForm.TypeEx
+                Case "VC_Renta"
+                    oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
+                    sSQL = "SELECT * FROM [@PELICULAS] WHERE Code='" & sMovieCode & "' AND U_STATUS='Disponible'"
+
+                    oRecordSet.DoQuery(sSQL)
+
+                    If oRecordSet.Fields.Item(0).Value = "" Then
+                        oApplication.SetStatusBarMessage("Esta película ya ha sido rentada. Elija otra.")
+                        Return False
+
+                    End If
+
+            End Select
+
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error: IsValiDUpdate" & ex.Message)
+            Return False
+        End Try
+
+        Return True
+
     End Function
 
     Public Sub New()

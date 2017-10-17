@@ -114,6 +114,9 @@ Public Class Videoclub
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_VISIBLE)
             oFilter.AddEx("VC_Catalogo")
 
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_COMBO_SELECT)
+            oFilter.AddEx("VC_Reporte")
+
             oApplication.SetFilter(oFilters)
 
         Catch ex As Exception
@@ -156,6 +159,7 @@ Public Class Videoclub
                         If CreateForm("Retorno.srf") Then
                             oApplication.Menus.Item("1281").Enabled = False
                             oApplication.Menus.Item("1282").Enabled = False
+
                         Else
                             BubbleEvent = False
 
@@ -264,7 +268,6 @@ Public Class Videoclub
                                             lMaxUdoCode = GetMaxCode()
                                             lMaxUdoCode += 1
                                             ' // Set New Value To Code and Index
-
                                             ' // Code
                                             oEditText.String = lMaxUdoCode.ToString
                                             ' // Index
@@ -283,7 +286,6 @@ Public Class Videoclub
                             End If
 
                     End Select
-
                 End If  ' pVal.FormType
 
 
@@ -392,7 +394,6 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
                             If pVal.ItemUID = "btnRent" Then
                                 ' // Rent a Movie
-                                Dim sSQL As String
                                 Dim oRecordSet As SAPbobsCOM.Recordset
                                 Dim sClientCode, sClientName, sMovieCode As String
 
@@ -404,14 +405,30 @@ Public Class Videoclub
                                     sClientName = oForm.DataSources.UserDataSources.Item("DSRen_Name").Value
                                     oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
 
+                                    ' // Change Movie Status
                                     If IsValidUpdate(oForm, sMovieCode) Then
-                                        ' // Change Movie Status
-                                        sSQL = "UPDATE [@PELICULAS] SET U_STATUS='Rentada', U_CLIENTE='" & sClientCode & "' WHERE Code='" & sMovieCode & "'"
-                                        oRecordSet.DoQuery(sSQL)
+                                        Dim oGeneralService As SAPbobsCOM.GeneralService
+                                        Dim oGeneralData As SAPbobsCOM.GeneralData
+                                        Dim oGeneralParams As SAPbobsCOM.GeneralDataParams
+                                        Dim sCmp As SAPbobsCOM.CompanyService
+
+                                        sCmp = oCompany.GetCompanyService
+
+                                        'Get a handle to the PELICULAS UDO
+                                        oGeneralService = sCmp.GetGeneralService("VIDEOCLUB")
+
+                                        'Get UDO record
+                                        oGeneralParams = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralDataParams)
+                                        oGeneralParams.SetProperty("Code", sMovieCode)
+                                        oGeneralData = oGeneralService.GetByParams(oGeneralParams)
+
+                                        'Update UDO record
+                                        oGeneralData.SetProperty("U_STATUS", "Rentada")
+                                        oGeneralData.SetProperty("U_CLIENTE", sClientCode)
+                                        oGeneralService.Update(oGeneralData)
                                         oApplication.MessageBox("Éxito. Película rentada a " & sClientName)
 
                                     End If
-
                                     ' // Clean Movie Field
                                     oForm.DataSources.UserDataSources.Item("DSRen_Movi").Value = ""
 
@@ -478,17 +495,35 @@ Public Class Videoclub
                                 Else
                                     Dim bMoviesToReturn As Boolean = False
                                     Dim oCheckBox As SAPbouiCOM.CheckBox
+                                    Dim oGeneralService As SAPbobsCOM.GeneralService
+                                    Dim oGeneralData As SAPbobsCOM.GeneralData
+                                    Dim oGeneralParams As SAPbobsCOM.GeneralDataParams
+                                    Dim sCmp As SAPbobsCOM.CompanyService
+
 
                                     For i As Integer = 1 To oMatrix.RowCount
                                         oCheckBox = oMatrix.Columns.Item("V_0").Cells.Item(i).Specific
 
+                                        ' // Remove the User Code from Movie and Change Status to "Disponible"
                                         If oCheckBox.Checked Then
-                                            ' // Remove the User Code from Movie and Change Status to "Disponible"
                                             oEditText = oMatrix.Columns.Item("V_2").Cells.Item(i).Specific
                                             sCode = oEditText.String
-                                            sSQL = "UPDATE [@PELICULAS] SET U_STATUS='Disponible', U_CLIENTE=NULL WHERE Code='" & sCode & "'"
-                                            oRecordSet.DoQuery(sSQL)
 
+                                            'Get a handle to the PELICULAS UDO
+                                            sCmp = oCompany.GetCompanyService
+                                            oGeneralService = sCmp.GetGeneralService("VIDEOCLUB")
+
+                                            'Get UDO record
+                                            oGeneralParams = oGeneralService.GetDataInterface(SAPbobsCOM.GeneralServiceDataInterfaces.gsGeneralDataParams)
+                                            oGeneralParams.SetProperty("Code", sCode)
+                                            oGeneralData = oGeneralService.GetByParams(oGeneralParams)
+
+                                            'Update UDO record
+                                            oGeneralData.SetProperty("U_STATUS", "Disponible")
+                                            oGeneralData.SetProperty("U_CLIENTE", "")
+                                            oGeneralService.Update(oGeneralData)
+
+                                            ' // Update Flag
                                             bMoviesToReturn = True
 
                                         End If
@@ -555,6 +590,28 @@ Public Class Videoclub
 
                     End Select
 
+                ElseIf pVal.FormTypeEx = "VC_Reporte" Then
+                    Select Case pVal.EventType
+                        Case SAPbouiCOM.BoEventTypes.et_COMBO_SELECT
+                            Dim sPlace, sGenre, sStatus As String
+                            Dim oComboBox As SAPbouiCOM.ComboBox
+
+                            oForm = oApplication.Forms.ActiveForm
+
+                            oComboBox = oForm.Items.Item("cbGenre").Specific
+                            sGenre = oComboBox.Value
+
+                            oComboBox = oForm.Items.Item("cbPlace").Specific
+                            sPlace = oComboBox.Value
+
+                            oComboBox = oForm.Items.Item("cbStatus").Specific
+                            sStatus = oComboBox.Value
+
+                            If sGenre = "Todos" And sPlace = "Todos" And sStatus = "Todos" Then
+                                oApplication.SetStatusBarMessage("TODOSSS!")
+                            End If
+
+                    End Select
                 End If  ' pVal.FormType
 
             End If  ' pVal.Before Action
@@ -743,6 +800,32 @@ Public Class Videoclub
                     oLink.LinkedObject = SAPbouiCOM.BoLinkedObject.lf_BusinessPartner
 
                 Case "Reporte.srf"
+                    oItem = oForm.Items.Item("cbGenre")
+                    oItem.AffectsFormMode = False
+                    oComboBox = oItem.Specific
+                    oComboBox.ValidValues.Add("Genero 1", "Genero 1")
+                    oComboBox.ValidValues.Add("Genero 2", "Genero 2")
+                    oComboBox.ValidValues.Add("Genero 3", "Genero 3")
+                    oComboBox.ValidValues.Add("Todos", "Todos")
+                    oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
+
+                    oItem = oForm.Items.Item("cbStatus")
+                    oItem.AffectsFormMode = False
+                    oComboBox = oItem.Specific
+                    oComboBox.ValidValues.Add("Disponible", "Disponible")
+                    oComboBox.ValidValues.Add("Rentada", "Rentada")
+                    oComboBox.ValidValues.Add("Todos", "Todos")
+                    oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
+
+                    oItem = oForm.Items.Item("cbPlace")
+                    oItem.AffectsFormMode = False
+                    oComboBox = oItem.Specific
+                    oComboBox.ValidValues.Add("Ubicacion 1", "Ubicacion 1")
+                    oComboBox.ValidValues.Add("Ubicacion 2", "Ubicacion 2")
+                    oComboBox.ValidValues.Add("Ubicacion 3", "Ubicacion 3")
+                    oComboBox.ValidValues.Add("Todos", "Todos")
+                    oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
+
 
             End Select
 
@@ -770,6 +853,15 @@ Public Class Videoclub
 
                 SetNewCode(oForm)
 
+            ElseIf oForm.TypeEx = "VC_Reporte" Then
+                oComboBox = oForm.Items.Item("cbGenre").Specific
+                oComboBox.Select("Todos")
+
+                oComboBox = oForm.Items.Item("cbStatus").Specific
+                oComboBox.Select("Todos")
+
+                oComboBox = oForm.Items.Item("cbPlace").Specific
+                oComboBox.Select("Todos")
             End If
 
             ' // Shows the information

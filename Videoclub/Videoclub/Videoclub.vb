@@ -1,4 +1,5 @@
 ﻿Imports System.Windows.Forms
+Imports System.Collections.Generic
 
 Public Class Videoclub
     Private WithEvents oApplication As SAPbouiCOM.Application
@@ -11,9 +12,6 @@ Public Class Videoclub
     Private oUserDataSource As SAPbouiCOM.UserDataSource
     Private countIDForm As Integer = 0
 
-    ' // Msg and Code Error for company connections
-    Public sCompErrMsg As String
-    Public lCompErrCode As Integer
 
     Private Sub StartApp()
         Dim sConnectionString As String
@@ -30,7 +28,7 @@ Public Class Videoclub
             ' // Get an initialized application object
             oApplication = oSboGuiApi.GetApplication()
 
-            ' // Set The connection context 
+            ' // Set The connection context
             SetConnectionContext()
 
             ' // Connect to Company Data Base
@@ -79,6 +77,85 @@ Public Class Videoclub
 
 
     ' *****************************
+    ' ******** MENU ITEMS  ****+***
+    ' *****************************
+
+    Private Sub SetMenuItems()
+        Dim oMenus As SAPbouiCOM.Menus
+        Dim oMenuItem As SAPbouiCOM.MenuItem
+        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
+
+        Try
+            oMenuItem = oApplication.Menus.Item("43520")
+            oMenus = oMenuItem.SubMenus
+
+            oCreationPackage = oApplication.CreateObject(
+                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
+
+
+            '// Menu <VIDEO CLUB>
+            ' ***********************
+            oMenuItem = oApplication.Menus.Item("43520")
+            oMenus = oMenuItem.SubMenus
+
+            ' // Set New Menu Item values into the MenuCreationPackage Object
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
+            oCreationPackage.UniqueID = "VideoClubMenu"
+            oCreationPackage.String = "Video Club"
+            oCreationPackage.Enabled = True
+            oCreationPackage.Position = 12
+
+            ' // Add the new Menu
+            If oApplication.Menus.Exists("VideoClubMenu") Then
+                oApplication.Menus.RemoveEx("VideoClubMenu")
+            End If
+
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Add the New <Catalogo de Películas> Menu
+            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "MenuCatalogo"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Catalogo de Películas"
+            oCreationPackage.Enabled = True
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Add the New <Catalogo de Películas> Menu
+            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "MenuRenta"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Renta de Películas"
+            oCreationPackage.Enabled = True
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Add the New <Catalogo de Películas> Menu
+            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "MenuRetorno"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Retorno de Películas"
+            oCreationPackage.Enabled = True
+            oMenus.AddEx(oCreationPackage)
+
+            ' // Add the New <Catalogo de Películas> Menu
+            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
+            oMenus = oMenuItem.SubMenus
+            oCreationPackage.UniqueID = "MenuReporte"
+            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
+            oCreationPackage.String = "Reporte de Películas"
+            oCreationPackage.Enabled = True
+            oMenus.AddEx(oCreationPackage)
+
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error SetMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
+
+        End Try
+    End Sub
+
+
+    ' *****************************
     ' ********* FILTERS  **********
     ' *****************************
 
@@ -87,35 +164,40 @@ Public Class Videoclub
         Dim oFilters As SAPbouiCOM.EventFilters = New SAPbouiCOM.EventFilters
 
         Try
-
             ' // Add the Others Event Types to the Container
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_MENU_CLICK)
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST)
+            oFilter.AddEx("VC_Renta")
+            oFilter.AddEx("VC_Retorno")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_COMBO_SELECT)
+            oFilter.AddEx("VC_Reporte")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE)
             oFilter.AddEx("VC_Catalogo")
+            oFilter.AddEx("VC_Renta")
+            oFilter.AddEx("VC_Retorno")
+            oFilter.AddEx("VC_Reporte")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_CLOSE)
+            oFilter.AddEx("VC_Catalogo")
+
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_LOAD)
+            oFilter.AddEx("VC_Catalogo")
+            oFilter.AddEx("VC_Renta")
+            oFilter.AddEx("VC_Retorno")
+            oFilter.AddEx("VC_Reporte")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED)
             oFilter.AddEx("VC_Catalogo")
             oFilter.AddEx("VC_Renta")
             oFilter.AddEx("VC_Retorno")
 
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST)
-            oFilter.AddEx("VC_Renta")
-            oFilter.AddEx("VC_Retorno")
+            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_MENU_CLICK)
+            oFilter.AddEx("VC_Catalogo")
 
             oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_VALIDATE)
             oFilter.AddEx("VC_Renta")
             oFilter.AddEx("VC_Retorno")
-
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_LOAD)
-            oFilter.AddEx("VC_Catalogo")
-
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_CLOSE)
-            oFilter.AddEx("VC_Catalogo")
-
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_FORM_VISIBLE)
-            oFilter.AddEx("VC_Catalogo")
-
-            oFilter = oFilters.Add(SAPbouiCOM.BoEventTypes.et_COMBO_SELECT)
-            oFilter.AddEx("VC_Reporte")
 
             oApplication.SetFilter(oFilters)
 
@@ -129,85 +211,56 @@ Public Class Videoclub
     Private Sub oApplication_MenuEvent(ByRef pVal As SAPbouiCOM.MenuEvent, ByRef BubbleEvent As Boolean) Handles oApplication.MenuEvent
         Dim oForm As SAPbouiCOM.Form
         Try
-
-        
             If pVal.BeforeAction Then
                 oForm = oApplication.Forms.ActiveForm
 
                 Select Case pVal.MenuUID
-
                     Case "MenuCatalogo"
                         ' // Create the Form or return False
-                        If CreateForm("Catalogo.srf") Then
-                            oApplication.Menus.Item("1281").Enabled = True
-                            oApplication.Menus.Item("1282").Enabled = False
-                        Else
+                        If Not CreateForm("Catalogo.srf") Then
                             BubbleEvent = False
 
                         End If
 
                     Case "MenuRenta"
                         ' // Create the Form or return False
-                        If CreateForm("Renta.srf") Then
-                            oApplication.Menus.Item("1281").Enabled = False
-                            oApplication.Menus.Item("1282").Enabled = False
+                        If Not CreateForm("Renta.srf") Then
 
-                        Else
                             BubbleEvent = False
 
                         End If
 
                     Case "MenuRetorno"
                         ' // Create the Form or return False
-                        If CreateForm("Retorno.srf") Then
-                            oApplication.Menus.Item("1281").Enabled = False
-                            oApplication.Menus.Item("1282").Enabled = False
-
-                        Else
+                        If Not CreateForm("Retorno.srf") Then
                             BubbleEvent = False
 
                         End If
 
                     Case "MenuReporte"
                         ' // Create the Form or return False
-                        If CreateForm("Reporte.srf") Then
-                            oApplication.Menus.Item("1281").Enabled = False
-                            oApplication.Menus.Item("1282").Enabled = False
-
-                        Else
+                        If Not CreateForm("Reporte.srf") Then
                             BubbleEvent = False
 
                         End If
-
 
                 End Select
 
             ElseIf Not pVal.BeforeAction Then
                 oForm = oApplication.Forms.ActiveForm
-
-                Select Case pVal.MenuUID
-                    Case "1281"  ' // Search Mode
-                        If oForm.TypeEx = "VC_Catalogo" Then
-                            ' // Enable Navigation Items
-                            oForm.EnableMenu("1288", True)
-                            oForm.EnableMenu("1289", True)
-                            oForm.EnableMenu("1290", True)
-                            oForm.EnableMenu("1291", True)
+                If oForm.TypeEx = "VC_Catalogo" Then
+                    Select Case pVal.MenuUID
+                        Case "1281"  ' // Search Mode
                             ActivateItems(oForm)
 
-                            ' // Enable create Mode Button
-                            oApplication.Menus.Item("1282").Enabled = True
+                            '' // Enable create Mode Button
+                            oForm.EnableMenu("1281", False)
+                            oForm.EnableMenu("1282", True)
 
-                        End If
 
-                    Case "1282"  ' // Add Mode
-                        If oForm.TypeEx = "VC_Catalogo" Then
+                        Case "1282"  ' // Add Mode
                             Dim oComboBox As SAPbouiCOM.ComboBox
-                            ' // Disable Navigation Items
-                            oForm.EnableMenu("1288", False)
-                            oForm.EnableMenu("1289", False)
-                            oForm.EnableMenu("1290", False)
-                            oForm.EnableMenu("1291", False)
+
                             DeactivateItems(oForm)
                             SetNewCode(oForm)
 
@@ -216,31 +269,31 @@ Public Class Videoclub
 
                             oComboBox = oForm.Items.Item("cbGenre").Specific
                             oComboBox.Select("Genero 1")
-                        End If
 
-                    Case "1288"  ' // Move NEXT
-                        If oForm.TypeEx = "VC_Catalogo" Then
+                            '' // Enable Search Mode Button
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", False)
+
+                        Case "1288"
                             DeactivateItems(oForm)
-                        End If
-
-
-                    Case "1289"  ' // LAST
-                        If oForm.TypeEx = "VC_Catalogo" Then
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", True)
+                        Case "1289"
                             DeactivateItems(oForm)
-                        End If
-
-                    Case "1290"  ' // Move BEGIN
-                        If oForm.TypeEx = "VC_Catalogo" Then
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", True)
+                        Case "1290"
                             DeactivateItems(oForm)
-                        End If
-
-                    Case "1291"  ' // Move END
-                        If oForm.TypeEx = "VC_Catalogo" Then
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", True)
+                        Case "1291"
                             DeactivateItems(oForm)
-                        End If
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", True)
 
-                End Select
-                oForm = oApplication.Forms.ActiveForm
+                    End Select
+                End If
+
 
             End If
         Catch ex As Exception
@@ -254,7 +307,6 @@ Public Class Videoclub
         Try
             If pVal.BeforeAction Then
                 If pVal.FormTypeEx = "VC_Catalogo" Then
-
                     Select Case pVal.EventType
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
                             ' // BUTON 1 PRESSED
@@ -294,11 +346,9 @@ Public Class Videoclub
                     End Select
                 End If  ' pVal.FormType
 
-
             ElseIf Not pVal.BeforeAction Then
 
                 If pVal.FormTypeEx = "VC_Catalogo" Then
-
                     Select Case pVal.EventType
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
 
@@ -325,39 +375,53 @@ Public Class Videoclub
                                     ' // Deactivate edit texts
                                     DeactivateItems(oForm)
 
-                                    ' // Deactivate Navigation Menu
-                                    oForm.EnableMenu("1288", False)
-                                    oForm.EnableMenu("1289", False)
-                                    oForm.EnableMenu("1290", False)
-                                    oForm.EnableMenu("1291", False)
-
                                 End If
 
                             End If
 
                         Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
-                            oForm = oApplication.Forms.Item(FormUID)
+                            oForm = oApplication.Forms.ActiveForm
                             ' // Deactivate edit texts
                             If oForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE Then
                                 DeactivateItems(oForm)
+                                ' // Enable Search Icon
+                                oForm.EnableMenu("1281", True)
+                                oForm.EnableMenu("1282", True)
+
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
+
+                            ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
+                                ' // Enable Search Icon
+                                oForm.EnableMenu("1281", True)
+                                oForm.EnableMenu("1282", False)
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
+
+                            ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_FIND_MODE Then
+
+                                ' // Enable Search Icon
+                                oForm.EnableMenu("1281", False)
+                                oForm.EnableMenu("1282", True)
+
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
 
                             End If
-
-                        Case SAPbouiCOM.BoEventTypes.et_FORM_LOAD
-                            oForm = oApplication.Forms.Item(FormUID)
-
-                            ' // Deactivate Navigation Menu
-                            oForm.EnableMenu("1288", False)
-                            oForm.EnableMenu("1289", False)
-                            oForm.EnableMenu("1290", False)
-                            oForm.EnableMenu("1291", False)
 
                     End Select
 
                 ElseIf pVal.FormTypeEx = "VC_Renta" Then
-
                     Select Case pVal.EventType
-
                         Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
                             Dim oCFLEvento As SAPbouiCOM.IChooseFromListEvent
                             Dim oCFL As SAPbouiCOM.ChooseFromList
@@ -467,6 +531,18 @@ Public Class Videoclub
 
                             End If
 
+                        Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
+                            oForm = oApplication.Forms.ActiveForm
+
+                            ' // Enable Search Icon
+                            oForm.EnableMenu("1281", False)
+                            oForm.EnableMenu("1282", False)
+
+                            ' // Enable Navigation Icons
+                            oForm.EnableMenu("1288", False)
+                            oForm.EnableMenu("1289", False)
+                            oForm.EnableMenu("1290", False)
+                            oForm.EnableMenu("1291", False)
                     End Select
 
                 ElseIf pVal.FormTypeEx = "VC_Retorno" Then
@@ -504,8 +580,11 @@ Public Class Videoclub
                                     Dim oGeneralData As SAPbobsCOM.GeneralData
                                     Dim oGeneralParams As SAPbobsCOM.GeneralDataParams
                                     Dim sCmp As SAPbobsCOM.CompanyService
-                                    Dim sCode As String
+                                    Dim sCode, sMovieName As String
+                                    Dim sNotRetMovies As New List(Of String)
+                                    Dim sRetMovies As New List(Of String)
 
+                                    ' // Update the Movies
                                     For i As Integer = 1 To oMatrix.RowCount
                                         oCheckBox = oMatrix.Columns.Item("V_0").Cells.Item(i).Specific
 
@@ -513,6 +592,9 @@ Public Class Videoclub
                                         If oCheckBox.Checked Then
                                             oEditText = oMatrix.Columns.Item("V_2").Cells.Item(i).Specific
                                             sCode = oEditText.String
+
+                                            oEditText = oMatrix.Columns.Item("V_1").Cells.Item(i).Specific
+                                            sMovieName = oEditText.String
 
                                             'Get a handle to the PELICULAS UDO
                                             sCmp = oCompany.GetCompanyService
@@ -523,10 +605,16 @@ Public Class Videoclub
                                             oGeneralParams.SetProperty("Code", sCode)
                                             oGeneralData = oGeneralService.GetByParams(oGeneralParams)
 
-                                            'Update UDO record
-                                            oGeneralData.SetProperty("U_STATUS", "Disponible")
-                                            oGeneralData.SetProperty("U_CLIENTE", "")
-                                            oGeneralService.Update(oGeneralData)
+                                            ' // Check if the movie has already been returned
+                                            If oGeneralData.GetProperty("U_STATUS") = "Disponible" Then
+                                                sNotRetMovies.Add(sMovieName)
+                                            Else
+                                                'Update UDO record
+                                                oGeneralData.SetProperty("U_STATUS", "Disponible")
+                                                oGeneralData.SetProperty("U_CLIENTE", "")
+                                                oGeneralService.Update(oGeneralData)
+                                                sRetMovies.Add(sMovieName)
+                                            End If
 
                                             ' // Update Flag
                                             bMoviesToReturn = True
@@ -535,17 +623,34 @@ Public Class Videoclub
 
                                     Next
 
+                                    ' // Show Returned Movies Messages
                                     If bMoviesToReturn Then
-                                        oApplication.MessageBox("Películas regresadas")
+                                        Dim sMsg As String
+                                        If sRetMovies.Count > 0 Then
+                                            sMsg = ""
+                                            For i As Integer = 0 To sRetMovies.Count - 1
+                                                sMsg += sRetMovies(i) & vbLf
+                                            Next
+                                            oApplication.MessageBox("Películas regresadas: " & vbLf & sMsg)
+
+                                        End If
+
+                                        If sNotRetMovies.Count > 0 Then
+                                            sMsg = ""
+                                            For i As Integer = 0 To sNotRetMovies.Count - 1
+                                                sMsg += sNotRetMovies(i) & vbLf
+                                            Next
+                                            oApplication.MessageBox("Estas películas ya se habían regresado: " & vbLf & sMsg)
+
+                                        End If
+
                                         GetMatrixData(oForm)
                                     Else
                                         oApplication.SetStatusBarMessage("Ninguna pelicula seleccionada")
                                     End If
 
-
                                 End If
 
-                                
                             End If
 
                         Case SAPbouiCOM.BoEventTypes.et_CHOOSE_FROM_LIST
@@ -553,6 +658,7 @@ Public Class Videoclub
                             Dim oCFL As SAPbouiCOM.ChooseFromList
                             Dim oDataTable As SAPbouiCOM.DataTable
                             Dim sCFL_ID, sCode, sName As String
+                            Dim oMatrix As SAPbouiCOM.Matrix
 
                             oForm = oApplication.Forms.Item(FormUID)
                             oCFLEvento = pVal
@@ -571,6 +677,9 @@ Public Class Videoclub
                                     oForm.DataSources.UserDataSources.Item("DSRet_Clie").ValueEx = sCode
                                     oForm.DataSources.UserDataSources.Item("DSRet_Name").ValueEx = sName
 
+                                    ' // Crean Movies Matrix
+                                    oMatrix = oForm.Items.Item("mtxMovies").Specific
+                                    oMatrix.Clear()
                                 End If
 
                             End If
@@ -593,6 +702,18 @@ Public Class Videoclub
 
                             End If
 
+                        Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
+                            oForm = oApplication.Forms.ActiveForm
+
+                            ' // Enable Search Icon
+                            oForm.EnableMenu("1281", False)
+                            oForm.EnableMenu("1282", False)
+
+                            ' // Enable Navigation Icons
+                            oForm.EnableMenu("1288", False)
+                            oForm.EnableMenu("1289", False)
+                            oForm.EnableMenu("1290", False)
+                            oForm.EnableMenu("1291", False)
                     End Select
 
                 ElseIf pVal.FormTypeEx = "VC_Reporte" Then
@@ -603,7 +724,7 @@ Public Class Videoclub
                             Dim oGrid As SAPbouiCOM.Grid
                             Dim sSQL As String
 
-                            oForm = oApplication.Forms.ActiveForm
+                            oForm = oApplication.Forms.Item(FormUID)
 
                             oComboBox = oForm.Items.Item("cbGenre").Specific
                             sGenre = oComboBox.Value
@@ -614,7 +735,7 @@ Public Class Videoclub
                             oComboBox = oForm.Items.Item("cbStatus").Specific
                             sStatus = oComboBox.Value
 
-                            sSQL = "SELECT U_GENERO, U_STATUS, U_UBICACION, Name, U_CLIENTE from [@PELICULAS] "
+                            sSQL = "SELECT U_GENERO as Genero, U_STATUS as Estado, U_UBICACION as Ubicación, Name as Nombre, U_CLIENTE as Cliente from [@PELICULAS] "
 
                             ' // TODOS FILTERS
                             ' // ************
@@ -624,6 +745,11 @@ Public Class Videoclub
                                 oGrid = oForm.Items.Item("gdMovies").Specific
                                 oGrid.DataTable = oForm.DataSources.DataTables.Item("MoviesDT")
                                 oGrid.CollapseLevel = 2
+                                oGrid.Columns.Item(0).Width = 60
+                                oGrid.Columns.Item(1).Width = 100
+                                oGrid.Columns.Item(2).Width = 60
+                                oGrid.Columns.Item(3).Width = 160
+                                oGrid.Columns.Item(4).Width = 60
                                 oForm.Freeze(False)
 
                             ElseIf Not sGenre = "" And Not sPlace = "" And Not sStatus = "" Then
@@ -657,10 +783,37 @@ Public Class Videoclub
                                 oForm.DataSources.DataTables.Item(0).ExecuteQuery(sSQL)
                                 oGrid = oForm.Items.Item("gdMovies").Specific
                                 oGrid.DataTable = oForm.DataSources.DataTables.Item("MoviesDT")
-                                oGrid.CollapseLevel = 2
+
+                                If oForm.DataSources.DataTables.Item("MoviesDT").IsEmpty Then
+                                    oGrid.CollapseLevel = 0
+                                Else
+                                    oGrid.CollapseLevel = 2
+                                End If
+
+                                oGrid.Columns.Item(0).Width = 60
+                                oGrid.Columns.Item(1).Width = 100
+                                oGrid.Columns.Item(2).Width = 60
+                                oGrid.Columns.Item(3).Width = 160
+                                oGrid.Columns.Item(4).Width = 60
                                 oForm.Freeze(False)
+
                             End If
+
+                        Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
+                            oForm = oApplication.Forms.ActiveForm
+
+                            ' // Enable Search Icon
+                            oForm.EnableMenu("1281", False)
+                            oForm.EnableMenu("1282", False)
+
+                            ' // Enable Navigation Icons
+                            oForm.EnableMenu("1288", False)
+                            oForm.EnableMenu("1289", False)
+                            oForm.EnableMenu("1290", False)
+                            oForm.EnableMenu("1291", False)
+
                     End Select
+
                 End If  ' pVal.FormType
 
             End If  ' pVal.Before Action
@@ -670,86 +823,6 @@ Public Class Videoclub
 
         End Try
 
-    End Sub
-
-
-
-    ' *****************************
-    ' ******** MENU ITEMS  ****+***
-    ' *****************************
-
-    Private Sub SetMenuItems()
-        Dim oMenus As SAPbouiCOM.Menus
-        Dim oMenuItem As SAPbouiCOM.MenuItem
-        Dim oCreationPackage As SAPbouiCOM.MenuCreationParams
-
-        Try
-            oMenuItem = oApplication.Menus.Item("43520")
-            oMenus = oMenuItem.SubMenus
-
-            oCreationPackage = oApplication.CreateObject(
-                SAPbouiCOM.BoCreatableObjectType.cot_MenuCreationParams)
-
-
-            '// Menu <VIDEO CLUB>
-            ' ***********************
-            oMenuItem = oApplication.Menus.Item("43520")
-            oMenus = oMenuItem.SubMenus
-
-            ' // Set New Menu Item values into the MenuCreationPackage Object
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_POPUP
-            oCreationPackage.UniqueID = "VideoClubMenu"
-            oCreationPackage.String = "Video Club"
-            oCreationPackage.Enabled = True
-            oCreationPackage.Position = 12
-
-            ' // Add the new Menu
-            If oApplication.Menus.Exists("VideoClubMenu") Then
-                oApplication.Menus.RemoveEx("VideoClubMenu")
-            End If
-
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Add the New <Catalogo de Películas> Menu
-            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "MenuCatalogo"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Catalogo de Películas"
-            oCreationPackage.Enabled = True
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Add the New <Catalogo de Películas> Menu
-            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "MenuRenta"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Renta de Películas"
-            oCreationPackage.Enabled = True
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Add the New <Catalogo de Películas> Menu
-            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "MenuRetorno"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Retorno de Películas"
-            oCreationPackage.Enabled = True
-            oMenus.AddEx(oCreationPackage)
-
-            ' // Add the New <Catalogo de Películas> Menu
-            oMenuItem = oApplication.Menus.Item("VideoClubMenu")
-            oMenus = oMenuItem.SubMenus
-            oCreationPackage.UniqueID = "MenuReporte"
-            oCreationPackage.Type = SAPbouiCOM.BoMenuType.mt_STRING
-            oCreationPackage.String = "Reporte de Películas"
-            oCreationPackage.Enabled = True
-            oMenus.AddEx(oCreationPackage)
-
-        Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error SetMenuItems: " & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
-
-        End Try
     End Sub
 
 
@@ -767,7 +840,6 @@ Public Class Videoclub
         Dim oItem As SAPbouiCOM.Item
 
         Try
-
             ' // Creating the New form
             ' *************************
 
@@ -812,10 +884,10 @@ Public Class Videoclub
             Select Case FileName
                 Case "Catalogo.srf"
                     oItem = oForm.Items.Item("txtCode")
-                    oItem.AffectsFormMode = False
+                    'oItem.AffectsFormMode = False
 
                     oItem = oForm.Items.Item("txtIndex")
-                    oItem.AffectsFormMode = False
+                    'oItem.AffectsFormMode = False
 
                     oItem = oForm.Items.Item("cbPlace")
                     oComboBox = oItem.Specific
@@ -897,6 +969,8 @@ Public Class Videoclub
                 SetNewCode(oForm)
 
             ElseIf oForm.TypeEx = "VC_Reporte" Then
+                Dim oGrid As SAPbouiCOM.Grid
+
                 oComboBox = oForm.Items.Item("cbGenre").Specific
                 oComboBox.Select("Todos")
 
@@ -905,11 +979,27 @@ Public Class Videoclub
 
                 oComboBox = oForm.Items.Item("cbPlace").Specific
                 oComboBox.Select("Todos")
+
+                oGrid = oForm.Items.Item("gdMovies").Specific
+
+                oGrid.Columns.Item(0).Width = 60
+                oGrid.Columns.Item(0).Editable = False
+                oGrid.Columns.Item(1).Width = 100
+                oGrid.Columns.Item(1).Editable = False
+                oGrid.Columns.Item(2).Width = 60
+                oGrid.Columns.Item(2).Editable = False
+                oGrid.Columns.Item(3).Width = 160
+                oGrid.Columns.Item(3).Editable = False
+                oGrid.Columns.Item(4).Width = 60
+                oGrid.Columns.Item(4).Editable = False
+
             End If
 
             ' // Shows the information
 
             oForm.Visible = True
+
+
 
         Catch ex As Exception
             oApplication.SetStatusBarMessage("Error CreateSampleFormSRF" & ex.Message, SAPbouiCOM.BoMessageTime.bmt_Short, True)
@@ -1030,7 +1120,6 @@ Public Class Videoclub
                     oCon.CondVal = "C"
                     oCFL.SetConditions(oCons)
 
-
                     ' Adding CFL for Card Name
                     oCFLCreationParams.UniqueID = "CFLRet_Name"
                     oCFL = oCFLs.Add(oCFLCreationParams)
@@ -1060,7 +1149,6 @@ Public Class Videoclub
         Dim oComboBox As SAPbouiCOM.ComboBox
 
         Try
-
             Select Case oForm.TypeEx
                 Case "VC_Catalogo"
                     ' // Bind Data to EditTexts
@@ -1133,10 +1221,9 @@ Public Class Videoclub
                     oColumn = oColumns.Item(3)
                     oColumn.DataBind.SetBound(True, "", "DSRet_Chec")
 
-
                 Case "VC_Reporte"
 
-                   
+
 
             End Select
 
@@ -1154,11 +1241,10 @@ Public Class Videoclub
                 Case "VC_Retorno"
                     Dim oConditions As SAPbouiCOM.Conditions
                     Dim oCondition As SAPbouiCOM.Condition
-
+                    oForm.Freeze(True)
                     oConditions = New SAPbouiCOM.Conditions
 
                     oMatrix = oForm.Items.Item("mtxMovies").Specific
-                    oMatrix.AutoResizeColumns()
                     oMatrix.Clear()
 
                     oDBDataSource = oForm.DataSources.DBDataSources.Item("@PELICULAS")
@@ -1177,6 +1263,7 @@ Public Class Videoclub
                         oMatrix.AddRow()
                     Next
 
+                    oForm.Freeze(False)
 
             End Select
 
@@ -1219,7 +1306,7 @@ Public Class Videoclub
 
                 Dim oEditText As SAPbouiCOM.EditText
 
-                ' // Set Default data 
+                ' // Set Default data
                 oEditText = oForm.Items.Item("txtIndex").Specific
                 oEditText.String = lNewUDOID.ToString
 
@@ -1259,6 +1346,8 @@ Public Class Videoclub
     End Sub
 
 
+
+
     ' *****************************
     ' ******** VALIDATIONS **********
     ' *****************************
@@ -1274,7 +1363,7 @@ Public Class Videoclub
                     ' // Validates Name Field
                     oEditText = oForm.Items.Item("txtName").Specific
                     If oEditText.String = "" Then
-                        oApplication.SetStatusBarMessage("Debe ingresar un nombre")
+                        oApplication.SetStatusBarMessage("Campo de Nombre vacio")
                         Return False
 
                     End If
@@ -1282,7 +1371,7 @@ Public Class Videoclub
                     ' // Validates Place Field
                     oComboBox = oForm.Items.Item("cbPlace").Specific
                     If oComboBox.Value = "" Then
-                        oApplication.SetStatusBarMessage("Debe seleccionar una ubicación")
+                        oApplication.SetStatusBarMessage("Campo de Ubicación vacio")
                         Return False
 
                     End If
@@ -1290,7 +1379,7 @@ Public Class Videoclub
                     ' // Validates Genre Field
                     oComboBox = oForm.Items.Item("cbGenre").Specific
                     If oComboBox.Value = "" Then
-                        oApplication.SetStatusBarMessage("Debe seleccionar un género")
+                        oApplication.SetStatusBarMessage("Campo de Género vacio")
                         Return False
 
                     End If
@@ -1299,7 +1388,7 @@ Public Class Videoclub
                     ' // Validates Client Field
                     oEditText = oForm.Items.Item("txtClient").Specific
                     If oEditText.String = "" Then
-                        oApplication.SetStatusBarMessage("Debe ingresar un Cliente")
+                        oApplication.SetStatusBarMessage("Campo de Cliente vacio")
                         Return False
 
                     End If
@@ -1307,7 +1396,7 @@ Public Class Videoclub
                     ' // Validates Movie Field
                     oEditText = oForm.Items.Item("txtMovie").Specific
                     If oEditText.String = "" Then
-                        oApplication.SetStatusBarMessage("Debe ingresar una película")
+                        oApplication.SetStatusBarMessage("Campo de Película vacio")
                         Return False
 
                     End If
@@ -1316,12 +1405,10 @@ Public Class Videoclub
                     ' // Validates Client Field
                     oEditText = oForm.Items.Item("txtClient").Specific
                     If oEditText.String = "" Then
-                        oApplication.SetStatusBarMessage("Debe ingresar un Cliente")
+                        oApplication.SetStatusBarMessage("Campo de Cliente vacio")
                         Return False
 
                     End If
-
-                Case "VC_Reporte"
 
             End Select
 
@@ -1362,6 +1449,7 @@ Public Class Videoclub
 
     End Function
 
+
     Public Sub New()
         StartApp()
 
@@ -1370,6 +1458,5 @@ Public Class Videoclub
         SetFilters()
 
     End Sub
-
 
 End Class

@@ -138,7 +138,10 @@ Public Class Videoclub
 
                     Case "MenuCatalogo"
                         ' // Create the Form or return False
-                        If Not CreateForm("Catalogo.srf") Then
+                        If CreateForm("Catalogo.srf") Then
+                            oApplication.Menus.Item("1281").Enabled = True
+                            oApplication.Menus.Item("1282").Enabled = False
+                        Else
                             BubbleEvent = False
 
                         End If
@@ -191,6 +194,9 @@ Public Class Videoclub
                             oForm.EnableMenu("1290", True)
                             oForm.EnableMenu("1291", True)
                             ActivateItems(oForm)
+
+                            ' // Enable create Mode Button
+                            oApplication.Menus.Item("1282").Enabled = True
 
                         End If
 
@@ -484,7 +490,6 @@ Public Class Videoclub
                                 Dim oMatrix As SAPbouiCOM.Matrix
                                 Dim oEditText As SAPbouiCOM.EditText
                                 Dim oRecordSet As SAPbobsCOM.Recordset
-                                Dim sSQL, sCode As String
 
                                 oRecordSet = oCompany.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset)
                                 oMatrix = oForm.Items.Item("mtxMovies").Specific
@@ -499,7 +504,7 @@ Public Class Videoclub
                                     Dim oGeneralData As SAPbobsCOM.GeneralData
                                     Dim oGeneralParams As SAPbobsCOM.GeneralDataParams
                                     Dim sCmp As SAPbobsCOM.CompanyService
-
+                                    Dim sCode As String
 
                                     For i As Integer = 1 To oMatrix.RowCount
                                         oCheckBox = oMatrix.Columns.Item("V_0").Cells.Item(i).Specific
@@ -595,6 +600,8 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_COMBO_SELECT
                             Dim sPlace, sGenre, sStatus As String
                             Dim oComboBox As SAPbouiCOM.ComboBox
+                            Dim oGrid As SAPbouiCOM.Grid
+                            Dim sSQL As String
 
                             oForm = oApplication.Forms.ActiveForm
 
@@ -607,10 +614,52 @@ Public Class Videoclub
                             oComboBox = oForm.Items.Item("cbStatus").Specific
                             sStatus = oComboBox.Value
 
-                            If sGenre = "Todos" And sPlace = "Todos" And sStatus = "Todos" Then
-                                oApplication.SetStatusBarMessage("TODOSSS!")
-                            End If
+                            sSQL = "SELECT U_GENERO, U_STATUS, U_UBICACION, Name, U_CLIENTE from [@PELICULAS] "
 
+                            ' // TODOS FILTERS
+                            ' // ************
+                            If sGenre = "Todos" And sPlace = "Todos" And sStatus = "Todos" Then
+                                oForm.Freeze(True)
+                                oForm.DataSources.DataTables.Item(0).ExecuteQuery(sSQL)
+                                oGrid = oForm.Items.Item("gdMovies").Specific
+                                oGrid.DataTable = oForm.DataSources.DataTables.Item("MoviesDT")
+                                oGrid.CollapseLevel = 2
+                                oForm.Freeze(False)
+
+                            ElseIf Not sGenre = "" And Not sPlace = "" And Not sStatus = "" Then
+                                sSQL += "WHERE "
+
+                                If Not sGenre = "Todos" Then
+                                    sSQL += "U_GENERO = '" & sGenre & "' AND "
+                                End If
+
+                                If Not sStatus = "Todos" Then
+                                    sSQL += "U_STATUS = '" & sStatus & "' AND "
+                                End If
+
+                                If Not sPlace = "Todos" Then
+                                    sSQL += "U_UBICACION = '" & sPlace & "'"
+                                End If
+
+                                ' // Clean SQL
+                                sSQL = Trim(sSQL)
+
+                                Dim lenghtSQL As Integer = sSQL.Length
+                                Dim sAux As String
+                                sAux = sSQL.Substring(lenghtSQL - 3)
+
+                                If sAux = "AND" Then
+                                    sSQL = sSQL.Remove(lenghtSQL - 4)
+                                End If
+
+                                ' // Get Data To Grid
+                                oForm.Freeze(True)
+                                oForm.DataSources.DataTables.Item(0).ExecuteQuery(sSQL)
+                                oGrid = oForm.Items.Item("gdMovies").Specific
+                                oGrid.DataTable = oForm.DataSources.DataTables.Item("MoviesDT")
+                                oGrid.CollapseLevel = 2
+                                oForm.Freeze(False)
+                            End If
                     End Select
                 End If  ' pVal.FormType
 
@@ -769,7 +818,6 @@ Public Class Videoclub
                     oItem.AffectsFormMode = False
 
                     oItem = oForm.Items.Item("cbPlace")
-                    oItem.AffectsFormMode = False
                     oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Ubicacion 1", "Ubicacion 1")
                     oComboBox.ValidValues.Add("Ubicacion 2", "Ubicacion 2")
@@ -777,7 +825,6 @@ Public Class Videoclub
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
 
                     oItem = oForm.Items.Item("cbGenre")
-                    oItem.AffectsFormMode = False
                     oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Genero 1", "Genero 1")
                     oComboBox.ValidValues.Add("Genero 2", "Genero 2")
@@ -801,7 +848,6 @@ Public Class Videoclub
 
                 Case "Reporte.srf"
                     oItem = oForm.Items.Item("cbGenre")
-                    oItem.AffectsFormMode = False
                     oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Genero 1", "Genero 1")
                     oComboBox.ValidValues.Add("Genero 2", "Genero 2")
@@ -810,7 +856,6 @@ Public Class Videoclub
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
 
                     oItem = oForm.Items.Item("cbStatus")
-                    oItem.AffectsFormMode = False
                     oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Disponible", "Disponible")
                     oComboBox.ValidValues.Add("Rentada", "Rentada")
@@ -818,14 +863,12 @@ Public Class Videoclub
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
 
                     oItem = oForm.Items.Item("cbPlace")
-                    oItem.AffectsFormMode = False
                     oComboBox = oItem.Specific
                     oComboBox.ValidValues.Add("Ubicacion 1", "Ubicacion 1")
                     oComboBox.ValidValues.Add("Ubicacion 2", "Ubicacion 2")
                     oComboBox.ValidValues.Add("Ubicacion 3", "Ubicacion 3")
                     oComboBox.ValidValues.Add("Todos", "Todos")
                     oComboBox.ExpandType = SAPbouiCOM.BoExpandType.et_ValueOnly
-
 
             End Select
 
@@ -865,6 +908,7 @@ Public Class Videoclub
             End If
 
             ' // Shows the information
+
             oForm.Visible = True
 
         Catch ex As Exception
@@ -878,8 +922,9 @@ Public Class Videoclub
     End Function
 
     Private Sub SetDataSourceToForm(ByRef oForm As SAPbouiCOM.Form)
-        Try
+        Dim oGrid As SAPbouiCOM.Grid
 
+        Try
             Select Case oForm.TypeEx
                 Case "VC_Catalogo"
                     oForm.DataSources.DBDataSources.Add("@PELICULAS")
@@ -903,7 +948,12 @@ Public Class Videoclub
                     oForm.DataSources.DBDataSources.Add("@PELICULAS")
 
                 Case "VC_Reporte"
+                    oForm.DataSources.DataTables.Add("MoviesDT")
+                    oForm.DataSources.DataTables.Item(0).ExecuteQuery("Select U_GENERO, U_STATUS, U_UBICACION, Name, U_CLIENTE from [@PELICULAS]")
 
+                    oGrid = oForm.Items.Item("gdMovies").Specific
+                    oGrid.DataTable = oForm.DataSources.DataTables.Item("MoviesDT")
+                    oGrid.CollapseLevel = 1
             End Select
 
         Catch ex As Exception

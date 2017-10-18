@@ -75,7 +75,6 @@ Public Class Videoclub
     End Function
 
 
-
     ' *****************************
     ' ******** MENU ITEMS  ****+***
     ' *****************************
@@ -251,15 +250,18 @@ Public Class Videoclub
                 If oForm.TypeEx = "VC_Catalogo" Then
                     Select Case pVal.MenuUID
                         Case "1281"  ' // Search Mode
-                            ActivateItems(oForm)
-
-                            '' // Enable create Mode Button
+                            ' // Enable create Mode Button
                             oForm.EnableMenu("1281", False)
                             oForm.EnableMenu("1282", True)
+                            ActivateItems(oForm)
 
 
                         Case "1282"  ' // Add Mode
                             Dim oComboBox As SAPbouiCOM.ComboBox
+
+                            ' // Enable Search Mode Button
+                            oForm.EnableMenu("1281", True)
+                            oForm.EnableMenu("1282", False)
 
                             DeactivateItems(oForm)
                             SetNewCode(oForm)
@@ -270,26 +272,26 @@ Public Class Videoclub
                             oComboBox = oForm.Items.Item("cbGenre").Specific
                             oComboBox.Select("Genero 1")
 
-                            '' // Enable Search Mode Button
-                            oForm.EnableMenu("1281", True)
-                            oForm.EnableMenu("1282", False)
-
                         Case "1288"
-                            DeactivateItems(oForm)
                             oForm.EnableMenu("1281", True)
                             oForm.EnableMenu("1282", True)
+                            DeactivateItems(oForm)
+
+
                         Case "1289"
-                            DeactivateItems(oForm)
                             oForm.EnableMenu("1281", True)
                             oForm.EnableMenu("1282", True)
+                            DeactivateItems(oForm)
+
                         Case "1290"
-                            DeactivateItems(oForm)
                             oForm.EnableMenu("1281", True)
                             oForm.EnableMenu("1282", True)
+                            DeactivateItems(oForm)
+
                         Case "1291"
-                            DeactivateItems(oForm)
                             oForm.EnableMenu("1281", True)
                             oForm.EnableMenu("1282", True)
+                            DeactivateItems(oForm)
 
                     End Select
                 End If
@@ -311,7 +313,7 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_ITEM_PRESSED
                             ' // BUTON 1 PRESSED
                             If pVal.ItemUID = "1" Then
-                                oForm = oApplication.Forms.ActiveForm
+                                oForm = oApplication.Forms.Item(FormUID)
 
                                 If oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
                                     Dim lMaxUdoCode As Integer
@@ -354,6 +356,7 @@ Public Class Videoclub
 
                             If pVal.ItemUID = "1" Then
                                 oForm = oApplication.Forms.ActiveForm
+
                                 ' // MOVIE CREATED AND UPDATE FORM
                                 If oForm.Mode = SAPbouiCOM.BoFormMode.fm_ADD_MODE Then
                                     Dim oComboBox As SAPbouiCOM.ComboBox
@@ -370,7 +373,6 @@ Public Class Videoclub
                                     ' // Deactivate edit texts
                                     DeactivateItems(oForm)
 
-
                                 ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE Then
                                     ' // Deactivate edit texts
                                     DeactivateItems(oForm)
@@ -381,10 +383,33 @@ Public Class Videoclub
 
                         Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
                             oForm = oApplication.Forms.ActiveForm
+
                             ' // Deactivate edit texts
                             If oForm.Mode = SAPbouiCOM.BoFormMode.fm_OK_MODE Then
+                                ' // Enable Search Icons
+                                oForm.EnableMenu("1281", True)
+                                oForm.EnableMenu("1282", True)
+
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
                                 DeactivateItems(oForm)
-                                ' // Enable Search Icon
+
+                            ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_UPDATE_MODE Then
+                                ' // Enable  Icons
+                                oForm.EnableMenu("1281", True)
+                                oForm.EnableMenu("1282", True)
+
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
+
+                            ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_EDIT_MODE Then
+                                ' // Enable  Icons
                                 oForm.EnableMenu("1281", True)
                                 oForm.EnableMenu("1282", True)
 
@@ -398,6 +423,7 @@ Public Class Videoclub
                                 ' // Enable Search Icon
                                 oForm.EnableMenu("1281", True)
                                 oForm.EnableMenu("1282", False)
+
                                 ' // Enable Navigation Icons
                                 oForm.EnableMenu("1288", True)
                                 oForm.EnableMenu("1289", True)
@@ -405,9 +431,19 @@ Public Class Videoclub
                                 oForm.EnableMenu("1291", True)
 
                             ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_FIND_MODE Then
+                                ' // Enable  Icons
+                                oForm.EnableMenu("1281", True)
+                                oForm.EnableMenu("1282", True)
 
+                                ' // Enable Navigation Icons
+                                oForm.EnableMenu("1288", True)
+                                oForm.EnableMenu("1289", True)
+                                oForm.EnableMenu("1290", True)
+                                oForm.EnableMenu("1291", True)
+
+                            ElseIf oForm.Mode = SAPbouiCOM.BoFormMode.fm_VIEW_MODE Then
                                 ' // Enable Search Icon
-                                oForm.EnableMenu("1281", False)
+                                oForm.EnableMenu("1281", True)
                                 oForm.EnableMenu("1282", True)
 
                                 ' // Enable Navigation Icons
@@ -496,7 +532,7 @@ Public Class Videoclub
                                         oGeneralData.SetProperty("U_STATUS", "Rentada")
                                         oGeneralData.SetProperty("U_CLIENTE", sClientCode)
                                         oGeneralService.Update(oGeneralData)
-                                        oApplication.MessageBox("Éxito. Película rentada a " & sClientName)
+                                        oApplication.SetStatusBarMessage("Película rentada a " & sClientName, SAPbouiCOM.BoMessageTime.bmt_Short, False)
 
                                     End If
                                     ' // Clean Movie Field
@@ -534,11 +570,11 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
                             oForm = oApplication.Forms.ActiveForm
 
-                            ' // Enable Search Icon
+                            ' // Disable Search Icon
                             oForm.EnableMenu("1281", False)
                             oForm.EnableMenu("1282", False)
 
-                            ' // Enable Navigation Icons
+                            ' // Disable Navigation Icons
                             oForm.EnableMenu("1288", False)
                             oForm.EnableMenu("1289", False)
                             oForm.EnableMenu("1290", False)
@@ -560,6 +596,7 @@ Public Class Videoclub
                             ElseIf pVal.ItemUID = "btnCheck" Then
                                 If FieldsAreValid(oForm) Then
                                     GetMatrixData(oForm)
+
                                 End If
 
                             ElseIf pVal.ItemUID = "btnReturn" Then
@@ -705,11 +742,11 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
                             oForm = oApplication.Forms.ActiveForm
 
-                            ' // Enable Search Icon
+                            ' // Disable Search Icon
                             oForm.EnableMenu("1281", False)
                             oForm.EnableMenu("1282", False)
 
-                            ' // Enable Navigation Icons
+                            ' // Disable Navigation Icons
                             oForm.EnableMenu("1288", False)
                             oForm.EnableMenu("1289", False)
                             oForm.EnableMenu("1290", False)
@@ -802,11 +839,11 @@ Public Class Videoclub
                         Case SAPbouiCOM.BoEventTypes.et_FORM_ACTIVATE
                             oForm = oApplication.Forms.ActiveForm
 
-                            ' // Enable Search Icon
+                            ' // Disable Search Icon
                             oForm.EnableMenu("1281", False)
                             oForm.EnableMenu("1282", False)
 
-                            ' // Enable Navigation Icons
+                            ' // Disable Navigation Icons
                             oForm.EnableMenu("1288", False)
                             oForm.EnableMenu("1289", False)
                             oForm.EnableMenu("1290", False)
@@ -1257,11 +1294,15 @@ Public Class Videoclub
 
                     oUserDataSource = oForm.DataSources.UserDataSources.Item("DSRet_Ind")
 
-                    For i As Integer = 0 To oDBDataSource.Size - 1
-                        oDBDataSource.Offset = i
-                        oUserDataSource.Value = i + 1
-                        oMatrix.AddRow()
-                    Next
+                    If oDBDataSource.Size > 0 Then
+                        For i As Integer = 0 To oDBDataSource.Size - 1
+                            oDBDataSource.Offset = i
+                            oUserDataSource.Value = i + 1
+                            oMatrix.AddRow()
+                        Next
+                    Else
+                        oApplication.SetStatusBarMessage("Cliente sin películas rentadas.", SAPbouiCOM.BoMessageTime.bmt_Short, False)
+                    End If
 
                     oForm.Freeze(False)
 
@@ -1323,12 +1364,18 @@ Public Class Videoclub
     Private Sub DeactivateItems(ByRef oForm As SAPbouiCOM.Form)
         Dim oItem As SAPbouiCOM.Item
         Dim oEdiTtext As SAPbouiCOM.EditText
+        Try
+            If oForm.TypeEx = "VC_Catalogo" Then
+                ' // Deactivate edit texts
+                oItem = oForm.Items.Item("txtCode")
+                oEdiTtext = oItem.Specific
+                oEdiTtext.Active = False
+                oItem.Enabled = False
+            End If
+        Catch ex As Exception
+            oApplication.SetStatusBarMessage("Error DeactivateItems: " & ex.Message)
+        End Try
 
-        ' // Deactivate edit texts
-        oItem = oForm.Items.Item("txtCode")
-        oEdiTtext = oItem.Specific
-        oEdiTtext.Active = False
-        oItem.Enabled = False
 
     End Sub
 
@@ -1344,7 +1391,6 @@ Public Class Videoclub
         oEdiTtext.Active = True
 
     End Sub
-
 
 
 
@@ -1413,7 +1459,7 @@ Public Class Videoclub
             End Select
 
         Catch ex As Exception
-            oApplication.SetStatusBarMessage("Error ValidateFields(): " & ex.Message)
+            oApplication.SetStatusBarMessage("Error ValidateFields: " & ex.Message)
             Return False
         End Try
 
